@@ -2,7 +2,7 @@ var isInitiator;
 
 room = prompt("Enter room name:");
 
-var socket = io.connect("http://localhost:8080/WebChat");
+var socket = io.connect(/*"http://localhost:1755/WebChat"*/);
 
 if (room !== "") {
   console.log('Joining room ' + room);

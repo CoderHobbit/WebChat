@@ -1,14 +1,15 @@
 var static = require('node-static');
 var http = require('http');
 var file = new(static.Server)();
-var app = http.createServer(function (req, res) {
+var server = http.createServer(function (req, res) {
   file.serve(req, res);
-}).listen(8080);
+});
 
-var io = require('socket.io').listen(app);
+var io = require('socket.io')(server);
 
+server.listen(1755);
 
-console.log("Node server listening on port 8080");
+console.log("Node server listening on port 1755");
 
 io.sockets.on('connection', function (socket){
 
