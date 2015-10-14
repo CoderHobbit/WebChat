@@ -1,0 +1,8 @@
+{
+  "name": "WebChatApp",
+  "version": "0.0.1",
+  "description": "A web video-chat app, akin to google hangouts",
+  "dependencies": {
+    "express": "^4.10.2"
+  }
+}
