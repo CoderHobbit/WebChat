@@ -1,21 +1,63 @@
 <!DOCTYPE html>
 <html>
-<head>
+	<head>
 
-<meta name="keywords" content="WebRTC, HTML5, JavaScript" />
-<meta name="description" content="WebRTC Reference App" />
-<meta name="viewport" content="width=device-width,initial-scale=1,minimum-scale=1,maximum-scale=1">
+		<meta name="keywords" content="WebRTC, HTML5, JavaScript" />
+		<meta name="description" content="WebRTC Reference App" />
+		<meta name="viewport" content="width=device-width,initial-scale=1,minimum-scale=1,maximum-scale=1">
 
-<title>WebRTC client</title>
+		<title>WebRTC client</title>
 
-</head>
+	</head>
 
-<body>
+	<body>
 
-<script src="../Server/node_modules/socket.io/node_modules/socket.io-client/socket.io.js"></script>
+		<!--<video id = 'video1' autoplay></video>-->
 
-<script src="js/lib/adapter.js"></script>
-<script src="js/main.js"></script>
+		<script src="/socket.io/socket.io.js"></script>
 
-</body>
+		<!--
+		<script src="/xampp/htdocs/WebChat/App/js/lib/adapter.js"></script>
+		<script src="/xampp/htdocs/WebChat/App/js/main.js"></script> 
+		-->
+
+		<script>
+
+			// Init socket
+			var socket = io();
+
+			// Init getUserMedia
+			navigator.getUserMedia = navigator.getUserMedia || navigator.webkitGetUserMedia || navigator.mozGetUserMedia;
+
+			var constraints = {video: true, audio: false};
+
+			// Send video function
+			function gotMedia(localMediaStream)
+			{
+				socket.emit('localMedia', localMediaStream);
+			}
+			// Error function
+			function gotError(error)
+			{
+				console.log("getUserMedia error : ", error);
+			}
+
+			// Begin sending video
+			navigator.getUserMedia(constraints, gotMedia, gotError);
+
+			// Upon receiving media, play it
+			socket.on('remoteMedia', function(mediaStream){
+									document.write('<video src = "' + window.URL.createObjectURL(mediaStream) + '" autoplay></video>');
+					   			      });
+			// Join a room
+			socket.on('joinRoom', function(){
+							var id = prompt("Which room would you like to join?");
+							var pass = prompt("Please enter the password for this room");
+							socket.emit('login', {rId : id, rPass : pass});
+							});
+
+
+		</script>
+
+	</body>
 </html>
