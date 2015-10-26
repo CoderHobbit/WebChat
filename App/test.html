@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		Das test
+	</head>
+	<body>
+		<video src = '' id = 'user1' autoplay = true></video>
+	
+		<script>
+			// Init an object
+			var user = {id : 'user1', media : null)};
+			var constraints = {video : true, audio : true};
+			// Init getUserMedia
+			navigator.getUserMedia = navigator.getUserMedia || navigator.webkitGetUserMedia || navigator.mozGetUserMedia;
+			// Error callback
+			function error(e)
+			{
+				// Log the error
+				console.log("getUserMedia error : ", e);
+			}
+			
+			// Success callback
+			function success(mediaStream)
+			{
+				// Set the user's stream
+				user.media = mediaStream;
+				// Find video
+				var vid = document.getElementById(user.id);
+				// Set the source
+				vid.src = window.URL.createObjectURL(user.media);
+			}
+
+			navigator.getUserMedia(contraints, success, error);
+		</script>
+	</body
+</html>
