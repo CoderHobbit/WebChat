@@ -22,34 +22,32 @@ io.on('connection',
 
 		// Media callback
 		socket.on('localMedia', function(localUser)
-				   {
-					console.log('got media');
-					users.push(localUser);
-					localUser.id = numUsers;
-					console.log('new m8: ' + localUser.id);
-					io.emit('remoteMedia', users);
-				   });
+				   	{
+						console.log('got media');
+						users.push(localUser);
+						console.log('new m8: ' + localUser.id);
+						io.emit('remoteMedia', users);
+				   	});
 
-		socket.on('disconnect',
-			function(){
-				console.log('user disconnected: ');
-				// Check who left
-				for(index = 0; index < users.length; index ++)
-				{
-					// If the mediastream is null, the user must've left
-					if(!users[index].mediaStream)
+		socket.on('disconnect', function()
 					{
-						console.log(users[index].id);
-						// Delete dead users
-						users.splice(index, 1);
-					}
-				}
-				// Inform the client
-				io.emit('someoneLeft', users);
-				// Update number of users
-				numUsers--;
-				
-			});
+						console.log('user disconnected: ');
+						// Check who left
+						for(index = 0; index < users.length; index ++)
+						{
+							// If the mediastream is null, the user must've left
+							if(!users[index].mediaStream)
+							{
+								console.log(users[index].id);
+								// Delete dead users
+								users.splice(index, 1);
+							}
+						}
+						// Inform the client
+						io.emit('someoneLeft', users);
+						// Update number of users
+						numUsers--;
+					});
 	});
 
 http.listen(1755, function(){

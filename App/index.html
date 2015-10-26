@@ -29,13 +29,13 @@
 			// Init getUserMedia
 			navigator.getUserMedia = navigator.getUserMedia || navigator.webkitGetUserMedia || navigator.mozGetUserMedia;
 
-			var constraints = {video: true, audio: false};
+			var constraints = {video: true, audio: true};
 
 			// Send video function
 			function gotMedia(localMediaStream)
 			{
 				localUser.mediaStream = localMediaStream;
-				socket.emit('localMedia', localUser.mediaStream);
+				socket.emit('localMedia', localUser);
 			}
 			
 			// Error function
@@ -47,41 +47,45 @@
 			
 
 			// Upon receiving media, play it
-			socket.on('remoteMedia', function(users){
-									//var div = document.getElementById('videos');
-									for(index = 0; index < users.length; index ++)
-									{
-										var vid = document.getElementById('video' + users[index].id);
-										window.stream = users[index].mediaStream;
-										//document.write(window.URL.createObjectURL(users[index].mediaStream));
-										vid.src = window.URL.createObjectURL(users[index].mediaStream);
-										vid.play();
-									}
-					   			      });
+			socket.on('remoteMedia', function(users)
+						{
+							// Cycle through all the users
+							for(index = 0; index < users.length; index ++)
+							{
+								// Index a user
+								var user = users[index];
+								// Find respective video element
+								var vid = document.getElementById('video' + user.id);	
+								// Attach media to video element
+								vid.src = window.URL.createObjectURL(user.mediaStreamURL);
+							}
+					   	});
 			// User updates
-			socket.on('someoneLeft', function(users){
-									// Find the div
-									var place = document.getElementById('videos');
-									// Query videos
-									var vids = place.childNodes;
-						
-									// Delete inactive video elements
-									for(index = 1; index <= vids.length; index ++)
-									{
-										// Check against active user ids
-										var vidFound = false;
-										for(uIndex = 0; uIndex < users.length; uIndex ++)
-										{
-											if(vids[index].id == users[index].id)
-												vidFound = true;
-										}
-										// Remove video element
-										if(!vidFound)
-											place.removeChild(vids[index]);
-									}
-								      });
+			socket.on('someoneLeft', function(users)
+						{
+							// Find the div
+							var place = document.getElementById('videos');
+							// Query videos
+							var vids = place.childNodes;
 			
-			socket.on('newUser', function(newNumUsers){
+							// Delete inactive video elements
+							for(index = 1; index <= vids.length; index ++)
+							{
+								// Check against active user ids
+								var vidFound = false;
+								for(uIndex = 0; uIndex < users.length; uIndex ++)
+								{
+									if(vids[index].id == users[index].id)
+										vidFound = true;
+								}
+								// Remove video element
+								if(!vidFound)
+									place.removeChild(vids[index]);
+							}
+						});
+			
+			socket.on('newUser', function(newNumUsers)
+						{
 							// Find the div
 							var place = document.getElementById('videos');
 							// Create a new video element
@@ -89,12 +93,17 @@
 							v.autoPlay = true;
 							v.src = "";
 							v.id = 'video' + newNumUsers;
+							// Update localUser id
+							localUser.id = v.id;
 							// Add video to the div
 							place.appendChild(v);
-						       });
-
+							
+						});
 			// Begin the process
 			navigator.getUserMedia(constraints, gotMedia, gotError);
+	
+			
+			
 		</script>
 
 	</body>

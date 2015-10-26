@@ -1,14 +1,13 @@
 <!DOCTYPE html>
 <html>
 	<head>
-		Das test
 	</head>
 	<body>
 		<video src = '' id = 'user1' autoplay = true></video>
 	
 		<script>
 			// Init an object
-			var user = {id : 'user1', media : null)};
+			var user = {id : 'user1', media : null};
 			var constraints = {video : true, audio : true};
 			// Init getUserMedia
 			navigator.getUserMedia = navigator.getUserMedia || navigator.webkitGetUserMedia || navigator.mozGetUserMedia;
@@ -30,7 +29,7 @@
 				vid.src = window.URL.createObjectURL(user.media);
 			}
 
-			navigator.getUserMedia(contraints, success, error);
+			navigator.getUserMedia(constraints, success, error);
 		</script>
 	</body
 </html>
