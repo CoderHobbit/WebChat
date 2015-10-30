@@ -24,19 +24,130 @@
 			var socket = io();
 			
 			// Keep track of users
-			var localUser = {id : "", mediaStream : null};
+			var localUser = {id : "", mediaStream : ""};
 
 			// Init getUserMedia
 			navigator.getUserMedia = navigator.getUserMedia || navigator.webkitGetUserMedia || navigator.mozGetUserMedia;
+			// Init peerConnection
+			var peerConnection = window.RTCPeerConnection || window.mozRTCPeerConnection || window.webkitRTCPeerConnection;
+			// Init sessionDescription
+			var sessionDescription = window.RTCSessionDescription || window.mozRTCSessionDescription || window.webkitRTCSessionDescription;
+			
 
+			// This function will display an incoming stream
+			pc.onaddstream = function(obj)
+			{
+				// Create a video element
+				var vid = document.createElement("video");
+				// Add to the document				
+				document.appendChild(vid);
+				// Stream media through the video element				
+				vid.srcObject = obj.stream;
+				// Play the video
+				vid.play();
+			}
+			
+			// Initialize some config variables
+			var config = {"iceServers":[{"url":"stun:stun.l.google.com:19302"}]};
+			var connection = { 'optional': [{'DtlsSrtpKeyAgreement': true}, {'RtpDataChannels': true }] };
+			
+			// Create a peer connection
+			peerConnection = new webkitRTCPeerConnection(config, connection);
+			peerConnection.onicecandidate = function(e)
+							{
+								if (!peerConnection || !e || !e.candidate) 
+									return;
+								var candidate = event.candidate;
+								sendNegotiation("candidate", candidate);
+							}
+			// Open data channel
+			dataChannel = peerConnection.createDataChannel("datachannel", {reliable: false});
+			
+			// Message callback - displays received video
+			dataChannel.onmessage = function(e)
+						{
+							console.log("DC from ["+user2+"]:" +e.data);
+						}
+			// Data channel opened callback
+			dataChannel.onopen = function()
+			{
+					console.log("------ DATACHANNEL OPENED ------");
+					$("#sendform").show();
+			};
+		
+			// Data channel closed callback	
+			dataChannel.onclose = function()
+					      {
+					      	      console.log("------ DC closed! ------");
+					      };
+			// Data channel error callback
+			dataChannel.onerror = function()
+					      {
+						      console.log("DC ERROR!!!");
+					      };
+			// Data channel callback
+			peerConnection.ondatachannel = function() 
+							{
+								console.log('peerConnection.ondatachannel event fired.');
+							};
+			
+			// Set remote description
+			peerConnection.setRemoteDescription(new RTCSessionDescription(offer));
+
+			var sdpConstraints = {'mandatory':
+							{
+								'OfferToReceiveAudio': true,
+								'OfferToReceiveVideo': true
+							}
+					     };
+			// Create and send answer sdp
+			peerConnection.createAnswer(function(sdp) 
+						    {
+			  				peerConnection.setLocalDescription(sdp);
+			  				sendNegotiation("answer", sdp);
+			  				console.log("------ SEND ANSWER ------");
+						    }, null, sdpConstraints);
+			// Proccess ice candidates
+			function processIce(iceCandidate){
+  				peerConnection.addIceCandidate(new RTCIceCandidate(iceCandidate));
+			}
+
+			// Helper functions
+			function end()
+			{
+				// Find all the videos
+				var vids = document.getElementsByTagName("video");
+				// Loop through and pause each video
+				for(index = 0; index < vids.length; i++)
+					vids[index].pause();
+				// Terminate the connection
+				pc.close();
+			}
+			function error(e)
+			{
+				// Log the error
+				console.log(e);
+				// Lolnope
+				end();
+			}
+		
+			// Prepare constraints
 			var constraints = {video: true, audio: true};
 
 			// Send video function
-			function gotMedia(localMediaStream)
+			function gotMedia(stream)
 			{
-				localUser.mediaStream = localMediaStream;
-				socket.emit('localMedia', localUser);
-			}
+				// Add the stream
+				pc.onaddstream({stream : stream});
+				pc.addsStream(stream);
+				
+				// Create and send an offer
+				pc.createOffer(function(offer){
+							pc.setLocalDescription(new sessionDescription(offer), function(){
+								// Send offer
+							}, error);
+						}, error);
+			});
 			
 			// Error function
 			function gotError(error)
@@ -55,9 +166,11 @@
 								// Index a user
 								var user = users[index];
 								// Find respective video element
-								var vid = document.getElementById('video' + user.id);	
+								var vid = document.getElementById(/*'video' + */user.id);	
 								// Attach media to video element
-								vid.src = window.URL.createObjectURL(user.mediaStreamURL);
+								vid.src = /*window.URL.createObjectURL(*/user.mediaStream/*)*/;
+								// Play the video
+								vid.play();
 							}
 					   	});
 			// User updates
