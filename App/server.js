@@ -13,7 +13,7 @@ app.get('/', function(req, res){
 		res.sendFile(__dirname + '/index.html');
 		});
 
-peerConnection = webkitRTCPeerConnection || mozRTCPeerConnection || RTCPeerConnection;
+peerConnection = nodeRTC.peerConnection;
 
 // Prepare a peerConnection
 var config = {"iceServers":[{"url":"stun:stun.l.google.com:19302"}]};
