@@ -1,6 +1,7 @@
 var app = require('express')();
 var http = require('http').Server(app);
 var io = require('socket.io')(http);
+var nodeRTC = require('peerconnection');
 
 // Various variables
 var population = 0;
@@ -13,13 +14,11 @@ app.get('/', function(req, res){
 		res.sendFile(__dirname + '/index.html');
 		});
 
-peerConnection = nodeRTC.peerConnection;
-
 // Prepare a peerConnection
 var config = {"iceServers":[{"url":"stun:stun.l.google.com:19302"}]};
 var connection = {'optional': [{'DtlsSrtpKeyAgreement': true}, {'RtpDataChannels': true }]};
 // Create peer connection
-var peerConnection = new peerConnection(config, connection);
+var peerConnection = new nodeRTC.PeerConnection(config, connection);
 
 // Gather ice candidates
 peerConnection.onicecandidate = function(e){
