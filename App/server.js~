@@ -99,6 +99,12 @@ io.on('connection',function(socket)
 				socket.emit( 'answer', evt );
 			    });
 
+			    c.on( 'data', function( evt ) {
+				// Video and audio from a browser
+				// Do nothing
+				
+			    });
+			
 			    c.onAddStream(function(stream){
 					  	for(var i = 0; i < users.length; i++)
 						{
