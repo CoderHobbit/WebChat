@@ -13,8 +13,8 @@ app.get('/', function(req, res){
 		res.sendFile(__dirname + '/index.html');
 		});
 
-/*
-// Creates a room
+
+/* Creates a room
 function createRoom(info, user)
 {
 	// Instantiate a room
@@ -59,80 +59,94 @@ function removeUser(usrId)
 function newUser(usr)
 {
 	users.push(usr);
+	io.emit('newUser', population);
 }
 
 // Callback for when someone connects
-io.on('connection',function(socket)
-		   {
-			console.log('a user connected');
+io.on('connection', 
+			function(socket)
+			{
+				console.log('A user connected');
 
-			// Instantiate a user
-			var usr = {id : '', dataChannel : null};
-			// Update number of users
-			population++;
-			// Set id
-			usr.id = population;
+				// Instantiate a user
+				var usr = {id : '', dataChannel : null};
+				// Update number of users
+				population++;
+				// Set id
+				usr.id = population;		
 		
-			// Set up datachannel and whatnot
-			newUser(usr);
+				// Set up datachannel and whatnot
+				newUser(usr);
 
-			socket.on('offer', function( sdp ) {
-			    console.log( "New offer:" );
-			    console.log( sdp.sdp );
+				console.log('Registered user' + usr.id);
 
-			    // Create the PeerConnection and setRemoteDescription from the offer.
-			    var c = new nodertc.PeerConnection();
-			    c.setRemoteDescription( sdp );
-			    users[population].dataChannel = c;
-
-
-			    // Callbacks
-			    c.on( 'icecandidate', function( evt ) {
-				// New ice candidate from the local socket.
-				// Emit it to the browser.
-				socket.emit( 'icecandidate', evt );
-			    });
-
-			    c.on( 'answer', function( evt ) {
-				// Answer from the local socket.
-				// Emit it to the browser.
-				socket.emit( 'answer', evt );
-			    });
-
-			    c.onAddStream(function(stream){
-					  	for(var i = 0; i < users.length; i++)
-						{
-							io.emit('dataIncoming', users[i].id);
-							users[i].dataChannel.AddStream(stream);
-						}
-					  });
-
-			    socket.on( 'icecandidate', function( evt ) {
-				// icecandidate from the remote connection,
-				// add it to the local connection.
-				c.addIceCandidate( evt );
-			    });
-			});
-			socket.on('disconnect', function()
-						{
-							console.log('user disconnected: ');
-							// Check who left
-							for(index = 0; index < users.length; index ++)
-							{
-								// If the mediastream is null, the user must've left
-								if(!users[index].dataChannel)
+				socket.on('offer', 
+								function(sdp)
 								{
-									console.log(users[index].id);
-									// Delete dead users
-									users.splice(index, 1);
-								}
-							}
-							// Inform the client
-							io.emit('someoneLeft', users);
-							// Update number of users
-							population--;
-						});
-		});
+				 					console.log("New offer:");
+				 					console.log(sdp.sdp);
+
+									// Create the PeerConnection and setRemoteDescription from the offer.
+									var connection = new nodertc.PeerConnection();
+									connection.setRemoteDescription( sdp );
+									users[population].dataChannel = connection;
+									
+									console.log("Attached data channel");
+
+									// Callbacks
+									connection.on('icecandidate', 
+														function( evt ) 
+														{
+															// New ice candidate from the local socket.
+															// Emit it to the browser.
+															socket.emit('icecandidate', evt );
+														});
+
+									connection.on('answer', 
+														function( evt ) 
+														{
+															// Answer from the local socket.
+															// Emit it to the browser.
+															socket.emit( 'answer', evt );
+														});
+
+									connection.onAddStream(function(stream)
+																	{
+																		console.log('Incoming data, adding strem');
+																		for(var i = 0; i < users.length; i++)
+																		{																			
+																			io.emit('dataIncoming', users[i].id);
+																			users[i].dataChannel.AddStream(stream);
+																		}
+											  						});
+
+									socket.on('icecandidate', 
+												function( evt ) 
+												{
+													// icecandidate from the remote connection,
+													// add it to the local connection.
+													connection.addIceCandidate( evt );
+												});
+								});
+				socket.on('disconnect', function()
+												{
+													// Check who left
+													for(index = 0; index < users.length; index ++)
+													{
+														// If the mediastream is null, the user must've left
+														if(!users[index].dataChannel)
+														{
+															console.log('user disconnected: ' + users[index].id);
+															// Delete dead users
+															users.splice(index, 1);
+														}
+													}
+													// Inform the client
+													io.emit('someoneLeft', users);
+													// Update number of users
+													population--;
+												});
+			});
 
 http.listen(1755, function(){
 		     console.log('Listening on *: 1755');

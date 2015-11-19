@@ -43,12 +43,15 @@
 			
 			// Create a peer connection
 			pc = new webkitRTCPeerConnection(config, connection);
+			console.log('Created a peer connection');
+
 			pc.onicecandidate = function(e)
 										{
+											console.log('Got ICE candidate');
 											if (!peerConnection || !e || !e.candidate) 
 												return;
 											var candidate = event.candidate;
-											sendNegotiation("candidate", candidate);
+											sendNegotiation("icecandidate", candidate);
 										};
 	
 			pc.createOffer = function(offerSDP) 
@@ -69,7 +72,6 @@
 			dataChannel.onopen = function()
 										{
 											console.log("------ DATACHANNEL OPENED ------");
-											$("#sendform").show();
 										};
 		
 			// Data channel closed callback	
@@ -87,10 +89,12 @@
 							function(id)
 							{
 								video = document.getElementById('video' + id);			
-		     				});
+								console.log('Grabbed video' + id);		     				
+							});
 
 			pc.onaddstream = function(stream)
 									{
+										console.log('Received remote media, displaying');
 										// Find video
 										var v = video;
 										// Attach data
@@ -130,6 +134,7 @@
 			// Helper functions
 			function end()
 			{
+				console.log('Ending call');
 				// Find all the videos
 				var vids = document.getElementsByTagName("video");
 				// Loop through and pause each video
@@ -143,7 +148,7 @@
 			function error(e)
 			{
 				// Log the error
-				console.log("error : " + e);
+				console.log("Error: " + e);
 				// Crash
 				end();
 			}
@@ -154,6 +159,7 @@
 			// Send video function
 			function gotMedia(stream)
 			{
+				console.log('Got media, adding stream');
 				// Add the stream
 				pc.addStream(stream);
 			}
@@ -162,7 +168,7 @@
 			function gotError(error)
 			{
 				// Log error
-				console.log("getusermedia error : ", error);
+				console.log("navigator.getUserMedia error : ", error);
 			}
 
 			
@@ -171,6 +177,7 @@
 			socket.on('someoneLeft', 
 							function(users)
 							{
+								console.log('A user has left');
 								// Find the div
 								var place = document.getElementById('videos');
 								// Query videos
@@ -195,7 +202,6 @@
 			socket.on('newUser', 
 							function(newNumUsers)
 							{
-								// Debug message
 								console.log('New user: ' + newNumUsers);
 								// Find the div
 								var place = document.getElementById('videos');
