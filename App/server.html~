@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html>
+	<head>
+
+		<meta name="keywords" content="WebRTC, HTML5, JavaScript" />
+		<meta name="description" content="WebRTC Reference App" />
+		<meta name="viewport" content="width=device-width,initial-scale=1,minimum-scale=1,maximum-scale=1">
+
+		<title>WebChat Server</title>
+
+	</head>
+
+	<body>
+
+
+		<script src="/socket.io/socket.io.js"></script>
+
+		<script>
+			// Initialize socket.io
+			var socket = io();
+			// Initialize organization variables
+			var connections = [];
+			// Temp var to store a peerconnection
+			var pc = null;
+
+			// Init peerConnection
+			var RTCPeerConnection = window.RTCPeerConnection || window.mozRTCPeerConnection || window.webkitRTCPeerConnection;
+			// Init sessionDescription
+			var RTCessionDescription = window.RTCSessionDescription || window.mozRTCSessionDescription || window.webkitRTCSessionDescription;
+		
+			// Initialize some config variables
+			var config = {"iceServers":[{"url":"stun:stun.l.google.com:19302"}]};
+			var connection = { 'optional': [{'DtlsSrtpKeyAgreement': true}, {'RtpDataChannels': true }]};
+
+			// Server message callbacks
+			socket.on('newUser', 
+							function(peepl)
+							{
+								// Ignore first user - that's us
+								if(peepl == 1)
+								{
+									console.log("I'm connected!");
+								}
+								// Otherwise start a peerconnection
+								else
+								{
+										start(false);
+								}
+							});
+			socket.on('someoneLeft',
+							function()
+							{
+								// Do something about it
+							});
+
+			socket.on('message', gotMessageFromServer);
+
+			// Start function - creates a peerConnection			
+			function start(isCaller) 
+			{
+				peerConnection = new RTCPeerConnection(config);
+				peerConnection.onicecandidate = gotIceCandidate;
+				peerConnection.onaddstream = gotRemoteStream;
+				pc = peerConnection;
+
+				if(isCaller) {
+				  peerConnection.createOffer(gotDescription, errorHandler);
+				}
+
+				connections.push(peerConnection);
+			}
+	
+			// Description handler
+			function gotDescription(description) 
+			{
+				 console.log('Got description');
+				
+				 pc.setLocalDescription(description, 
+												function () 
+												{
+	 												serverConnection.send(JSON.stringify({'sdp': description}));
+ 												}, function()
+													{
+														console.log('Error setting description');
+													}
+												);
+			}
+
+			// ICE candidate handler
+			function gotIceCandidate(event) {
+				 if(event.candidate != null) {
+					  serverConnection.send(JSON.stringify({'ice': event.candidate}));
+				 }
+			}
+
+			// Broadcast handler
+			function gotMessageFromServer(message) 
+			{
+				if(!pc) start(false);
+
+				var signal = JSON.parse(message.data);
+				if(signal.sdp) 
+				{
+				  pc.setRemoteDescription(new RTCSessionDescription(signal.sdp), 
+													function() 
+													{
+														pc.createAnswer(gotDescription, errorHandler);
+													}, errorHandler);
+
+				} 
+				else if(signal.ice) 
+				{
+				  pc.addIceCandidate(new RTCIceCandidate(signal.ice));
+				}
+			}
+			
+			// Remote stream handler
+			function gotRemoteStream(event) 
+			{
+				console.log("Got remote stream");
+				// Send video out to everyone
+				for(var i = 0; i < connections.length; i ++)
+					connections[i].addStream(event.stream);
+			}
+
+			// Offer error handler
+			function createOfferError(error) 
+			{
+				 console.log(error);
+			}
+
+		</script>
+	</body>
+</html>

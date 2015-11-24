@@ -6,7 +6,7 @@
 		<meta name="description" content="WebRTC Reference App" />
 		<meta name="viewport" content="width=device-width,initial-scale=1,minimum-scale=1,maximum-scale=1">
 
-		<title>WebRTC client</title>
+		<title>WebChat Client</title>
 
 	</head>
 
@@ -22,182 +22,32 @@
 		<script>
 			// Init socket
 			var socket = io();
-			
-			// Keep track of users
-			var localUser = {id : "", mediaStream : ""};
 
 			// Init getUserMedia
 			navigator.getUserMedia = navigator.getUserMedia || navigator.webkitGetUserMedia || navigator.mozGetUserMedia;
 			// Init peerConnection
-			var peerConnection = window.RTCPeerConnection || window.mozRTCPeerConnection || window.webkitRTCPeerConnection;
+			var RTCPeerConnection = window.RTCPeerConnection || window.mozRTCPeerConnection || window.webkitRTCPeerConnection;
 			// Init sessionDescription
-			var sessionDescription = window.RTCSessionDescription || window.mozRTCSessionDescription || window.webkitRTCSessionDescription;
+			var RTCSessionDescription = window.RTCSessionDescription || window.mozRTCSessionDescription || window.webkitRTCSessionDescription;
 			
 
 			// Initialize some config variables
 			var config = {"iceServers":[{"url":"stun:stun.l.google.com:19302"}]};
 			var connection = { 'optional': [{'DtlsSrtpKeyAgreement': true}, {'RtpDataChannels': true }] };
+			var constraints = { video : true, audio : true };
 
-			// Temp var to keep video
+			// Some vars
 			var video = null;
-			
-			// Create a peer connection
-			pc = new webkitRTCPeerConnection(config, connection);
-			console.log('Created a peer connection');
+			var localStream = null;
+			var peerConnection = null;
 
-			pc.onicecandidate = function(e)
-										{
-											console.log('Got ICE candidate');
-											if (!peerConnection || !e || !e.candidate) 
-												return;
-											var candidate = event.candidate;
-											sendNegotiation("icecandidate", candidate);
-										};
-	
-			pc.createOffer = function(offerSDP) 
-									{
-							  			pc.setLocalDescription(offerSDP);
-							  			socket.send({targetUser: 'target-user-id', offerSDP: offerSDP});
-							  		};
-			// Open data channel
-			dataChannel = pc.createDataChannel("datachannel", {reliable: false});
-			
-			// Message callback
-			dataChannel.onmessage = function(e)
-											{
-												console.log("DC from ["+user2+"]:" +e.data);
-											};
-
-			// Data channel opened callback
-			dataChannel.onopen = function()
-										{
-											console.log("------ DATACHANNEL OPENED ------");
-										};
-		
-			// Data channel closed callback	
-			dataChannel.onclose = function()
-											{
-														console.log("------ DC closed! ------");
-											};
-			// Data channel error callback
-			dataChannel.onerror = function()
-											{
-												console.log("DC ERROR!!!");
-											};
-
-			socket.on('dataIncoming', 
-							function(id)
-							{
-								video = document.getElementById('video' + id);			
-								console.log('Grabbed video' + id);		     				
-							});
-
-			pc.onaddstream = function(stream)
-									{
-										console.log('Received remote media, displaying');
-										// Find video
-										var v = video;
-										// Attach data
-										v.src = window.URL.createObjectURL(stream);
-										// Play video
-										v.play();
-						       	};
-			// Data channel callback
-			pc.ondatachannel = function() 
-										{
-											console.log('peerConnection.ondatachannel event fired.');
-										};
-			
-			// Set remote description
-			//pc.setRemoteDescription(new RTCSessionDescription(offer));
-
-			var sdpConstraints = {'mandatory':
-												{
-													'OfferToReceiveAudio': true,
-													'OfferToReceiveVideo': true
-												}
-					     				};
-			// Create and send answer sdp
-			pc.createAnswer(function(sdp) 
-				    		   	{
-						  				peerConnection.setLocalDescription(sdp);
-						  				sendNegotiation("answer", sdp);
-						  				console.log("------ SEND ANSWER ------");
-						    		}, null, sdpConstraints);
-
-			// Proccess ice candidates
-			function processIce(iceCandidate)
-			{
-  				peerConnection.addIceCandidate(new RTCIceCandidate(iceCandidate));
-			}
-
-			// Helper functions
-			function end()
-			{
-				console.log('Ending call');
-				// Find all the videos
-				var vids = document.getElementsByTagName("video");
-				// Loop through and pause each video
-				for(index = 0; index < vids.length; i++)
-					vids[index].pause();
-				// Terminate the connection
-				pc.close();
-			}
-
-			// Error
-			function error(e)
-			{
-				// Log the error
-				console.log("Error: " + e);
-				// Crash
-				end();
-			}
-		
-			// Prepare constraints
-			var constraints = {video: true, audio: true};
-
-			// Send video function
-			function gotMedia(stream)
-			{
-				console.log('Got media, adding stream');
-				// Add the stream
-				pc.addStream(stream);
-			}
-			
-			// Error function
-			function gotError(error)
-			{
-				// Log error
-				console.log("navigator.getUserMedia error : ", error);
-			}
-
-			
-
-			// User updates
+			// Message callbacks
 			socket.on('someoneLeft', 
 							function(users)
 							{
-								console.log('A user has left');
-								// Find the div
-								var place = document.getElementById('videos');
-								// Query videos
-								var vids = place.childNodes;
-
-								// Delete inactive video elements
-								for(index = 1; index <= vids.length; index ++)
-								{
-									// Check against active user ids
-									var vidFound = false;
-									for(uIndex = 0; uIndex < users.length; uIndex ++)
-									{
-										if(vids[index].id == users[index].id)
-											vidFound = true;
-									}
-									// Remove video element
-									if(!vidFound)
-										place.removeChild(vids[index]);
-								}
+								// Do something about it
 							});
+			socket.on('message', gotMessageFromServer);
 			
 			socket.on('newUser', 
 							function(newNumUsers)
@@ -210,16 +60,90 @@
 								v.autoPlay = true;
 								v.src = "";
 								v.id = 'video' + newNumUsers;
-								// Update localUser id
-								localUser.id = v.id;
 								// Add video to the div
 								place.appendChild(v);
-							
+								video = v;
 							});
-			// Begin the process
-			navigator.getUserMedia(constraints, gotMedia, gotError);
-	
+			// Start function - creates a peer connection
+			function start(isCaller) 
+			{
+				peerConnection = new RTCPeerConnection(config);
+				peerConnection.onicecandidate = gotIceCandidate;
+				peerConnection.onaddstream = gotRemoteStream;
+				peerConnection.addStream(localStream);
+
+				if(isCaller) 
+				{
+				  peerConnection.createOffer(gotDescription, errorHandler);
+				}
+			}
+		
+			// Server message handler
+			function gotMessageFromServer(message) 
+			{
+				if(!peerConnection) start(false);
+
+				var signal = JSON.parse(message.data);
+				if(signal.sdp) 
+				{
+				  peerConnection.setRemoteDescription(new RTCSessionDescription(signal.sdp), 
+																		function() 
+																		{
+																			peerConnection.createAnswer(gotDescription, errorHandler);
+				  														}, errorHandler);
+
+				} 
+				else if(signal.ice) 
+				{
+				  peerConnection.addIceCandidate(new RTCIceCandidate(signal.ice));
+				}
+			}
 			
+			// ICE candidate handler
+			function gotIceCandidate(event) 
+			{
+				if(event.candidate != null) 
+				{
+				  socket.send(JSON.stringify({'ice': event.candidate}));
+				}
+			}
+			
+			// Description handler
+			function gotDescription(description) 
+			{
+				 console.log('Got description');
+				 peerConnection.setLocalDescription(description, function () {
+					  socket.send(JSON.stringify({'sdp': description}));
+				 }, function() {console.log('Set description error')});
+			}
+			
+			// Remote stream handler
+			function gotRemoteStream(event)
+			{
+				 console.log('Got remote stream');
+				 video.src = window.URL.createObjectURL(event.stream);
+			}
+			
+			// Error handler
+			function errorHandler(error)
+			{
+				 console.log(error);
+			}
+
+			// getUserMedia stream handler
+			function gotMedia(stream)
+			{
+				localStream = stream;
+				start(true);
+			}
+			// getUserMedia error handler
+			function gotError(err)
+			{
+				console.log("Error: " + err);
+			}
+
+			// Begin the process
+			navigator.getUserMedia(constraints, gotMedia, gotError);			
 			
 		</script>
 
