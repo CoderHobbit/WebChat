@@ -53,10 +53,10 @@ io.on('connection',
 													// Update number of users
 													population--;
 												});
-				socket.on('message', function(message)
+				socket.on('message', function(m)
 											{
-												console.log("Received: " + message);
-												io.broadcast(message);
+												console.log("Received: " + m);
+												io.broadcast(m);
 											});
 			});
 

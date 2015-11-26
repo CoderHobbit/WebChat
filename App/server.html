@@ -63,7 +63,8 @@
 				peerConnection.onaddstream = gotRemoteStream;
 				pc = peerConnection;
 
-				if(isCaller) {
+				if(isCaller) 
+				{
 				  peerConnection.createOffer(gotDescription, errorHandler);
 				}
 
@@ -73,12 +74,12 @@
 			// Description handler
 			function gotDescription(description) 
 			{
-				 console.log('Got description');
+				 console.log('Got description: ' + description);
 				
 				 pc.setLocalDescription(description, 
 												function () 
 												{
-	 												serverConnection.send(JSON.stringify({'sdp': description}));
+	 												socket.send(JSON.stringify({'sdp': description}));
  												}, function()
 													{
 														console.log('Error setting description');
@@ -87,20 +88,27 @@
 			}
 
 			// ICE candidate handler
-			function gotIceCandidate(event) {
-				 if(event.candidate != null) {
-					  serverConnection.send(JSON.stringify({'ice': event.candidate}));
+			function gotIceCandidate(event) 
+			{
+				console.log('Got ice candidate: ' + event);
+				 if(event.candidate != null) 
+				 {
+					  socket.send(JSON.stringify({'ice': event.candidate}));
 				 }
 			}
 
 			// Broadcast handler
-			function gotMessageFromServer(message) 
+			function gotMessageFromServer(m) 
 			{
 				if(!pc) start(false);
 
-				var signal = JSON.parse(message.data);
+				console.log('Got message: ' + m);
+
+				var signal = JSON.parse(m);
 				if(signal.sdp) 
 				{
+					
+					console.log('Found sdp');
 				  pc.setRemoteDescription(new RTCSessionDescription(signal.sdp), 
 													function() 
 													{
@@ -110,6 +118,7 @@
 				} 
 				else if(signal.ice) 
 				{
+					console.log('Found ice');
 				  pc.addIceCandidate(new RTCIceCandidate(signal.ice));
 				}
 			}
@@ -124,7 +133,7 @@
 			}
 
 			// Offer error handler
-			function createOfferError(error) 
+			function errorHandler(error) 
 			{
 				 console.log(error);
 			}

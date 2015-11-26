@@ -65,13 +65,14 @@
 								place.appendChild(v);
 								video = v;
 							});
+
 			// Start function - creates a peer connection
 			function start(isCaller) 
 			{
 				peerConnection = new RTCPeerConnection(config);
+				peerConnection.addStream(localStream);
 				peerConnection.onicecandidate = gotIceCandidate;
 				peerConnection.onaddstream = gotRemoteStream;
-				peerConnection.addStream(localStream);
 
 				if(isCaller) 
 				{
@@ -80,11 +81,14 @@
 			}
 		
 			// Server message handler
-			function gotMessageFromServer(message) 
+			function gotMessageFromServer(m) 
 			{
 				if(!peerConnection) start(false);
+				
+				console.log('Got message: ' + m);				
 
-				var signal = JSON.parse(message.data);
+				var signal = JSON.parse(m);
+
 				if(signal.sdp) 
 				{
 				  peerConnection.setRemoteDescription(new RTCSessionDescription(signal.sdp), 
@@ -103,6 +107,8 @@
 			// ICE candidate handler
 			function gotIceCandidate(event) 
 			{
+				console.log('Got ice candidate: ' + event);
+
 				if(event.candidate != null) 
 				{
 				  socket.send(JSON.stringify({'ice': event.candidate}));
@@ -112,7 +118,7 @@
 			// Description handler
 			function gotDescription(description) 
 			{
-				 console.log('Got description');
+				 console.log('Got description: ' + description);
 				 peerConnection.setLocalDescription(description, function () {
 					  socket.send(JSON.stringify({'sdp': description}));
 				 }, function() {console.log('Set description error')});
@@ -128,7 +134,7 @@
 			// Error handler
 			function errorHandler(error)
 			{
-				 console.log(error);
+				 console.log('Error' + error);
 			}
 
 			// getUserMedia stream handler
@@ -142,10 +148,6 @@
 			{
 				console.log("Error: " + err);
 			}
-
-			// Begin the process
-			navigator.getUserMedia(constraints, gotMedia, gotError);			
-			
 		</script>
 
 	</body>
