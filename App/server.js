@@ -18,6 +18,10 @@ app.get('/server', function(req, res)
 							{
 								res.sendFile(__dirname+'/server.html');
 							});
+app.get('/test', function(req, res)
+							{
+								res.sendFile(__dirname+'/test.html');
+							});
 app.get('/favicon.ico', function(req, res)
 							{
 								res.sendFile(__dirname+'/favicon.ico');
@@ -35,19 +39,24 @@ io.broadcast = function(data)
 io.on('connection', 
 			function(socket)
 			{
-				console.log('A user connected');
-
 				sockets.push(socket);
 
 				// Update number of users
 				population++;	
 		
-				socket.emit('newUser', population);
+				io.emit('newUser', population);
 
-				console.log('Registered user' + population);
+				console.log('Registered user: ' + population + ' : ' + socket.handshake.url);
+
+				socket.on('newVideo', function(data)
+												{
+													for(var i = 0; i < sockets.length; i ++)
+														sockets[i].emit('heresData', data);
+												});
 
 				socket.on('disconnect', function()
 												{
+													console.log('Someone left' + socket.handshake.url);
 													// Inform the client
 													io.emit('someoneLeft');
 													// Update number of users
@@ -55,7 +64,6 @@ io.on('connection',
 												});
 				socket.on('message', function(m)
 											{
-												console.log("Received: " + m);
 												io.broadcast(m);
 											});
 			});
