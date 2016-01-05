@@ -1,0 +1,58 @@
+.mute_button_muted{
+	/*Basic Button Styles*/
+	display:block;
+	height:50px;
+	width:50px;
+	border-radius:50%;
+	background: cyan;
+	
+	background-image: url(http://uxrepo.com/static/icon-sets/font-awesome/png32/24/000000/mute-24-000000.png);
+	background-repeat: no-repeat; 
+	background-position: 14px 10px;
+	/*Button Position*/
+	top: 150px;
+	left: 20px;
+	position: absolute;
+}
+.mute_button_unmuted{
+	/*Basic Button Styles*/
+	display:block;
+	height:50px;
+	width:50px;
+	border-radius:50%;
+	background: cyan;
+	
+	background-image: url(http://uxrepo.com/static/icon-sets/foundation/png32/24/000000/fi-microphone-24-000000.png);
+	background-repeat: no-repeat; 
+	background-position: 15px 10px;
+	/*Button Position*/
+	top: 150px;
+	left: 20px;
+	position: absolute;
+}
+/*Hovering animation*/
+input.mute_button_muted:hover{
+	box-shadow: 0 0 15px rgb(0,191,295);
+}
+input.mute_button_unmuted:hover{
+	box-shadow: 0 0 15px rgb(0, 191, 295);
+}
+
+.passive{
+	position: relative;
+	top: 10px;
+	left: 970px;	
+}
+
+.active{
+	position: relative;
+	top: 10px;
+	left: 970px;
+	box-shadow: 0 0 15px rgb(0, 191, 295);	
+}
+
+.full{
+	position: absolute;
+	top: 10px;
+	box-shadow: 0 0 15px rgb(0, 191, 295);	
+}
