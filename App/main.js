@@ -1,27 +1,4 @@
-<!DOCTYPE html>
-<html>
-	<head>
-		<link rel="stylesheet" type="text/css" href="css">
-
-		<meta name="keywords" content="WebRTC, HTML5, JavaScript" />
-		<meta name="description" content="WebRTC Reference App" />
-		<meta name="viewport" content="width=device-width,initial-scale=1,minimum-scale=1,maximum-scale=1">
-
-		<title>WebChat Client</title>
-
-	</head>
-
-	<body>
-
-
-		<script src="/socket.io/socket.io.js"></script>
-
-		<div id = 'videos'>
-		</div>
-
-
-		<script>
-			// Init socket
+// Init socket
 			var socket = io();
 
 			// Init getUserMedia
@@ -68,8 +45,6 @@
 			// Add to page
 			document.body.appendChild(bigDiv);
 			
-			// Run authentication
-			authenticate();
 			// Get media
 			navigator.getUserMedia(constraints, gotMedia, errorHandler);		
 
@@ -144,8 +119,14 @@
 
 			function authenticate()
 			{
-				var pass = prompt('Please enter the password: ');
-				socket.emit('password', pass);
+				// Grab password
+				var data = document.getElementById('login');
+				// Send the authentication data to the server
+				socket.emit('loginData', {user: data.uname, room: data.rname, pass: data.pass});
+			}
+
+			function createRoom()
+			{
 			}
 
 			// Start function - starts streaming, which in turn starts connection process
@@ -325,7 +306,6 @@
 																				console.log('Successfully added ICE candidate!');
 																			}, errorHandler);
 				}
-				// Check if someone pressed the silence button
 				else if(signal.sound)
 				{
 					video = null;
@@ -335,20 +315,18 @@
 						if(vidArr[i].id == signal.from)
 							video = vidArr[i];
 					}
-					// Check the button state and make sure we do't have null video
-					// Take out sound
+					// Check the button state
 					if(signal.sound === 'off' && video)
 					{
-						console.log('Ripping sound');
+						console.log('Ripping video');
 						// Rip sound
 						var arr = video.stream.getAudioTracks();
 						while(video.stream.getAudioTracks().length > 0)
 							video.stream.removeTrack(arr[0]);
 					}
-					// Return sound
 					else if(video)
 					{
-						console.log('Returning sound');
+						console.log('Returning video');
 						// Return sound
 						for(var i = 0; i < video.sound.length; i ++)
 							video.stream.addTrack(video.sound[i]);
@@ -411,11 +389,6 @@
 				// Capture local stream
 				localStream = stream;
 
-				// Create local video
-				createVideo(window.URL.createObjectURL(localStream), 'localVideo');
+				// Create a video
+				createVideo(window.URL.createElementURL(localStream), 'localVideo');
 			}
-
-		</script>
-
-	</body>
-</html>

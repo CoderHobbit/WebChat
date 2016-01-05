@@ -1,16 +1,86 @@
 <!DOCTYPE html>
 <html>
 	<head>
+		<link rel="stylesheet" type="text/css" href="css">
 	</head>
 	<body>
-		<video src = '' id = 'user1' autoplay = true></video>
-	
+		<div  id = 'videos'></div>
 		<script>
+			"use strict";
 			// Init an object
 			var user = {id : 'user1', media : null};
 			var constraints = {video : true, audio : true};
 			// Init getUserMedia
 			navigator.getUserMedia = navigator.getUserMedia || navigator.webkitGetUserMedia || navigator.mozGetUserMedia;
+			
+			var bigDiv = document.createElement('div');
+			bigDiv.id = "bigD";
+			bigDiv.setAttribute('class', 'full');
+			document.body.appendChild(bigDiv);
+			// Creates a video element with the given url and id
+			function createVideo(url, id)
+			{
+				// Find the video div
+				var place = document.getElementById('videos');
+				// Create a new div
+				var newDiv = document.createElement('div');
+				newDiv.id = 'videoDiv' + id;
+				newDiv.class = "active";
+				newDiv.class = "passive";
+				newDiv.setAttribute('class','passive');
+				
+				// Create a new video element
+				var v = document.createElement('video');
+				v.id = id;
+				v.src = url;
+				v.play();
+				v.height = 200;
+				v.width = 266;
+				
+				v.onclick = function(){
+					var dasDiv = document.getElementById(newDiv.id);
+					var parent = dasDiv.parentNode;
+					for(var i = 0; i < parent.childNodes.length; i++)
+					{
+						parent.childNodes[i].setAttribute('class','passive');
+					}
+					dasDiv.setAttribute('class','active');
+					while(bigDiv.hasChildNodes()){
+						bigDiv.removeChild(bigDiv.lastChild);
+					}
+					var newV = document.createElement('video');
+					newV.src = v.src;
+					newV.id = v.id + 'active';
+					newV.play();
+					newV.height = 500;
+					newV.width = 666;
+					bigDiv.appendChild(newV);
+				}
+				var button = document.createElement('button');
+				button.id = "sound" + id;
+				button.class="mute_button_unmuted";
+				button.class = "mute_button_muted";
+				button.setAttribute('class','mute_button_muted');
+				button.onclick=function(){
+					if(document.getElementById(button.id).getAttribute('class') === 'mute_button_unmuted')
+					{
+						constraints.audio=false;
+						document.getElementById(button.id).setAttribute('class','mute_button_muted');
+					}
+					else
+					{
+						constraints.audio=true;
+						document.getElementById(button.id).setAttribute('class','mute_button_unmuted');
+					}
+				};
+				button.style.zIndex = "1";
+				newDiv.appendChild(button);
+				// Add video to the div
+				newDiv.appendChild(v);
+				// Append div to div
+				place.appendChild(newDiv);
+			}			
+			
 			// Error callback
 			function error(e)
 			{
@@ -23,10 +93,12 @@
 			{
 				// Set the user's stream
 				user.media = mediaStream;
-				// Find video
-				var vid = document.getElementById(user.id);
 				// Set the source
-				vid.src = window.URL.createObjectURL(user.media);
+				var src = window.URL.createObjectURL(user.media);
+
+				// Make three vids
+				for(var i = 0; i < 3; i ++)
+					createVideo(src, 'video' + i);
 			}
 
 			navigator.getUserMedia(constraints, success, error);
