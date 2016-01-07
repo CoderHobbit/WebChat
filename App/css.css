@@ -38,21 +38,26 @@ input.mute_button_unmuted:hover{
 	box-shadow: 0 0 15px rgb(0, 191, 295);
 }
 
+/*The non active video feed*/
 .passive{
 	position: relative;
-	top: 10px;
-	left: 970px;	
+	float: left;
+	top: 650px;
+	left: 10px;	
 }
 
+/*currently viewed small feed*/
 .active{
 	position: relative;
-	top: 10px;
-	left: 970px;
+	float: left;
+	top: 650px;
+	left: 10px;
 	box-shadow: 0 0 15px rgb(0, 191, 295);	
 }
 
+/*A bigger picture*/
 .full{
 	position: absolute;
-	top: 10px;
-	box-shadow: 0 0 15px rgb(0, 191, 295);	
+	/*box-shadow: 0 0 15px rgb(0, 191, 295);*/	
+	z-index: -1;
 }
