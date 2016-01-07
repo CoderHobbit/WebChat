@@ -3,18 +3,14 @@
 	<head>
 		<link rel="stylesheet" type="text/css" href="css">
 		<title>WebChat Client</title>
-
 	</head>
 
 	<body>
-
+		
 		<script src="/socket.io/socket.io.js"></script>
 
-		<div id = 'videos' hidden>
-		</div>
-
-		<div id = "forms" hidden>
-			<form id = "login" hidden>
+		<div id = "forms">
+			<form id = "login">
 				Room name <br>
 				<input type = "text" name = "roomName"> <br>
 				Username <br>
@@ -24,7 +20,7 @@
 				<input type = "submit" name = "submit" value = "Log In">
 			</form>
 
-			<form id = "create" hidden>
+			<form id = "create">
 
 				<script>
 					document.write("Create room " + document.getElementsByName("roomName")[0].getAttribute("value") + "?");
@@ -35,11 +31,8 @@
 			</form>
 		</div>
 
-
-		<script src = main.js>
+		<script>
 		</script>
-
-		
 
 	</body>
 </html>

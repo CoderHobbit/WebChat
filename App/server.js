@@ -26,6 +26,16 @@ app.get('/index', function(req, res)
 						{
 							res.sendFile(__dirname+'/index.html');
 						});
+// Login form
+app.get('/start', function(req, res)
+						{
+							res.sendFil(__dirname+'/login.html');
+						});
+// Javascript
+app.get('/main.js', function(req, res)
+							{
+								res.sendFile(__dirname+'/main.js');
+							});
 // Cascading Style Sheets file
 app.get('/css', function(req, res)
 						{
