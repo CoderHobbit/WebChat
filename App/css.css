@@ -30,20 +30,13 @@
 	left: 20px;
 	position: absolute;
 }
-/*Hovering animation*/
-input.mute_button_muted:hover{
-	box-shadow: 0 0 15px rgb(0,191,295);
-}
-input.mute_button_unmuted:hover{
-	box-shadow: 0 0 15px rgb(0, 191, 295);
-}
 
 /*The non active video feed*/
 .passive{
 	position: relative;
 	float: left;
 	top: 650px;
-	left: 10px;	
+	left: 10px;
 }
 
 /*currently viewed small feed*/
