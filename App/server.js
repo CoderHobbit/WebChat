@@ -22,7 +22,7 @@ var doneClients = [];
 
 // Redirect commands, for accessing things
 // Index/client
-app.get('/index', function(req, res)
+app.get('/client', function(req, res)
 						{
 							res.sendFile(__dirname+'/index.html');
 						});
