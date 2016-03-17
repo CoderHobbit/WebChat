@@ -1,4 +1,39 @@
-// Init socket
+<!DOCTYPE html>
+<html>
+	<head>
+		<link rel="stylesheet" type="text/css" href="css">
+
+		<meta name="keywords" content="WebRTC, HTML5, JavaScript" />
+		<meta name="description" content="WebRTC Reference App" />
+		<meta name="viewport" content="width=device-width,initial-scale=1,minimum-scale=1,maximum-scale=1">
+
+		<title>WebChat Client</title>
+
+	</head>
+
+	<body>
+		
+		<form id = 'loginForm'>
+			Screen Name*: <br>
+			<input type = 'text' name = 'uname' id = 'uname'><br>
+			Room Name*: <br>
+			<input type = 'text' name = 'rname' id = 'rname'><br>
+			Room Password (if applicable): <br>
+			<input type = 'password' name = 'pass' id = 'pass'><br>
+			(* = required)
+		
+			<button type = 'button' name = 'login' id = 'login'>Log In</button>
+			<button type = 'button' name = 'create' id = 'create'>Create</button>
+		</form>
+
+		<script src="/socket.io/socket.io.js"></script>
+
+		<div id = 'videos'>
+		</div>
+
+
+		<script>
+			// Init socket
 			var socket = io();
 
 			// Init getUserMedia
@@ -40,13 +75,72 @@
 			bigDiv.id = 'bigVideo';
 			// Class and dimensions
 			bigDiv.setAttribute('class', 'full');
-			bigDiv.width = screen.width / 2.0;
-			bigDiv.height = bigDiv.width * 500.0 / 666.0;
+			bigDiv.height = screen.height - 122.0;
+			bigDiv.width = bigDiv.height * 666.0 / 500.0;
 			// Add to page
 			document.body.appendChild(bigDiv);
 			
-			// Get media
-			navigator.getUserMedia(constraints, gotMedia, errorHandler);		
+			// Set button onclick behaviors
+			var logIn = document.getElementById('login');
+			var create = document.getElementById('create');
+
+			login.onclick = function()
+									{
+										console.log("Click!");
+										// Get media
+										navigator.getUserMedia(constraints, gotMedia, errorHandler);
+										// Grab desired username, password and room name
+										var rname = document.getElementById('rname').value;
+										var uname = document.getElementById('uname').value;
+										var pass = document.getElementById('pass').value;
+										// If the names are empty, error (password can be empty)
+										if(rname === "")
+										{
+											alert('Error: please specify a room name!');
+											return;
+										}
+										else if(uname === "")
+										{
+											alert('Error: please create a screen name!');
+											return;
+										}
+										// If all needed information is present - send to server
+										// Put it in a JSON
+										var data = JSON.stringify({type : 'login', uname : uname, rname : rname, pass : pass});
+										console.log("Sending this: " + data);
+										socket.emit('auth', data);
+									};
+
+			create.onclick = function()
+									{
+										console.log("Click!");
+										// Get media
+										navigator.getUserMedia(constraints, gotMedia, errorHandler);
+										// Grab desired username, password and room name
+										var rname = document.getElementById('rname').value;
+										var uname = document.getElementById('uname').value;
+										var pass = document.getElementById('pass').value;
+										// If the names are empty, error (password can be empty)
+										if(rname === "")
+										{
+											alert('Error: please specify a room name!');
+											return;
+										}
+										else if(uname === "")
+										{
+											alert('Error: please create a screen name!');
+											return;
+										}
+										// If all needed information is present - send to server
+										else if(pass === "") // User is about to make a room with no password...
+											alert('Warning: room ' + rname + ' has no password and is accesible by anybody!');
+										
+										// Put it in a JSON
+										var data = JSON.stringify({type : 'create', uname : uname, rname : rname, pass : pass});
+										console.log("Sending this: " + data);
+										socket.emit('auth', data);
+									};
+				
 
 			// Message callbacks
 			// Disconnect handler
@@ -91,11 +185,23 @@
 									myTarget = newNumUsers;
 								}						
 							});
-			socket.on('authFailed',
-							function()
-							{
-								authenticate();
-							});
+
+			// Authentication callbacks
+			socket.on('login failed', function()
+											{
+												alert("Error: login failed - incorrect credentials!");
+											});
+			socket.on('create failed', function()
+											{
+												alert("Error: room creation failed - requested name already in use!");
+											});
+			socket.on('youin', function()
+											{
+												alert("Success!!!");
+												// Remove form
+												var form = document.getElementById('loginForm');
+												form.setAttribute('hidden', true);
+											});
 			socket.on('start',
 							function(info)
 							{
@@ -116,18 +222,6 @@
 									myTarget = info.caller;
 								}
 							});
-
-			function authenticate()
-			{
-				// Grab password
-				var data = document.getElementById('login');
-				// Send the authentication data to the server
-				socket.emit('loginData', {user: data.uname, room: data.rname, pass: data.pass});
-			}
-
-			function createRoom()
-			{
-			}
 
 			// Start function - starts streaming, which in turn starts connection process
 			function start() 
@@ -269,7 +363,7 @@
 					if(peers[i].id == signal.from)
 						peerConnection = peers[i].pc;
 				
-				// If we aren't connect, become connect
+				// If we aren't connected, become connected
 				if(!peerConnection)
 					start();
 				
@@ -306,6 +400,7 @@
 																				console.log('Successfully added ICE candidate!');
 																			}, errorHandler);
 				}
+				// Check if someone pressed the silence button
 				else if(signal.sound)
 				{
 					video = null;
@@ -315,18 +410,20 @@
 						if(vidArr[i].id == signal.from)
 							video = vidArr[i];
 					}
-					// Check the button state
+					// Check the button state and make sure we do't have null video
+					// Take out sound
 					if(signal.sound === 'off' && video)
 					{
-						console.log('Ripping video');
+						console.log('Ripping sound');
 						// Rip sound
 						var arr = video.stream.getAudioTracks();
 						while(video.stream.getAudioTracks().length > 0)
 							video.stream.removeTrack(arr[0]);
 					}
+					// Return sound
 					else if(video)
 					{
-						console.log('Returning video');
+						console.log('Returning sound');
 						// Return sound
 						for(var i = 0; i < video.sound.length; i ++)
 							video.stream.addTrack(video.sound[i]);
@@ -389,6 +486,11 @@
 				// Capture local stream
 				localStream = stream;
 
-				// Create a video
-				createVideo(window.URL.createElementURL(localStream), 'localVideo');
+				// Create local video
+				createVideo(window.URL.createObjectURL(localStream), 'localVideo');
 			}
+
+		</script>
+
+	</body>
+</html>
