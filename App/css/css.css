@@ -54,3 +54,28 @@
 	/*box-shadow: 0 0 15px rgb(0, 191, 295);*/	
 	z-index: -1;
 }
+
+/*Styling for the login screen*/
+form{
+	font-family: fantasy;
+	margin:auto;
+}
+
+body{
+		/* Alternate login screen
+		background-image: url(http://d1pfint8izqszg.cloudfront.net/blog/theeye.jpg);
+		background-repeat: no-repeat;
+		background-size: 1350px;
+		background-position: 130px 0px;
+		*/
+		background-image: url(https://upload.wikimedia.org/wikipedia/commons/thumb/a/a8/Cannabis_leaf.svg/2000px-Cannabis_leaf.svg.png);
+		background-size: 7px;
+		background-color: darkgreen;
+		display:flex;
+}
+
+html, body{
+		height:100%;
+		width:100%;
+		margin:0;
+}
