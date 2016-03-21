@@ -33,7 +33,7 @@ function User(screenName, socket, room)
 	this.getId = function() {return this.id;};
 
 	// Callback helpers - get called by socket functions
-	static messageHelper = function(m)
+	this.messageHelper = function(m)
 								{
 									// Parse message
 									var info = JSON.parse(m);
@@ -43,7 +43,7 @@ function User(screenName, socket, room)
 									this.room.sendToId(info.to, 'message', m);
 								}
 
-	static disconnectHelper = function()
+	this.disconnectHelper = function()
 									{
 										console.log(this.screenName + ' has left us!');
 										this.room.removeUser(this);
@@ -53,7 +53,7 @@ function User(screenName, socket, room)
 											roomShredder(this.room);
 										}
 									}
-	static iminHelper = function() // This one is initially disabled; enabled when this is added to a room
+	this.iminHelper = function() // This one is initially disabled; enabled when this is added to a room
 							{
 								// Queue up to connect
 								this.room.connectionQueue.push(this);
