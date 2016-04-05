@@ -62,8 +62,6 @@
 			var peers = [];
 			// Active peerConnection
 			var peerConnection = null;
-			// Local id
-			var myId = 0;
 			// Number of video elements created - skip the server
 			var numVids = 0;
 			// Constraint variable for controlling order of events
@@ -171,38 +169,28 @@
 												// Remove form
 												var form = document.getElementById('loginForm');
 												form.setAttribute('hidden', true);
-												// Set my id												
-												myId = id;
 												// Enable signaling
 												socket.on('message', gotMessageFromServer);
-												// Time to receive calls
-												iAmOfferer = false;
 												// Get local video
 												navigator.getUserMedia(constraints, gotMedia, errorHandler);
-												console.log('My ID: ' + myId);
-												// Tell my room that we can begins
-												socket.emit('imin');
 											});
 			socket.on('start',
 							function(info)
 							{
-								// Alert user and kill some time
-								alert("Connecting to room!");
-								console.log(info.caller, ' is calling ', info.callto, '; me: ', myId);
 								// Is it my turn?
-								if(myId == info.caller)
+								if(info.you === 'caller')
 								{
-									console.log('Talking to ', info.callto);
+									console.log('Call to ', info.callto);
 									myTarget = info.callto;
 									// Begin
 									iAmOfferer = true;
 									start();
 								}
-								else if(myId == info.callto)
+								else if(info.you === 'receiver')
 								{
 									console.log('Call from ', info.caller);
 									// Talk to the caller!
-									myTarget = info.caller;
+									myTarget = info.callto;
 								}
 							});
 
@@ -264,13 +252,13 @@
 											if(document.getElementById(button.id).getAttribute('class') === 'mute_button_unmuted')
 											{
 												// Emit to silence
-												socket.send(JSON.stringify({sound: 'off', to: v.id.charAt(5), from: myId}));
+												socket.send(JSON.stringify({sound: 'off', to: v.id.charAt(5)}));
 												document.getElementById(button.id).setAttribute('class','mute_button_muted');
 											}
 											else
 											{
 												// Emit to unsilence
-												socket.send(JSON.stringify({sound: 'on', to: v.id.charAt(5), from: myId}));
+												socket.send(JSON.stringify({sound: 'on', to: v.id.charAt(5)}));
 												document.getElementById(button.id).setAttribute('class','mute_button_unmuted');
 											}
 										};
@@ -371,7 +359,7 @@
 																			peerConnection.onicecandidate = gotIceCandidate;
 																			console.log('Set remote SDP, procceed with ICE gathering!');
 																			// Can probably let other people start (no other reliable checkpoint)
-																			socket.emit('doneConnecting', myId);
+																			socket.emit('doneConnecting', socket);
 																	}, errorHandler);
 
 				} 
@@ -430,7 +418,7 @@
 				if(event.candidate != null) 
 				{
 					// Pass it on
-					socket.send(JSON.stringify({candidate: candidate, to: myTarget, from: myId}));
+					socket.send(JSON.stringify({candidate: candidate, to: myTarget}));
 				}
 			}
 			
@@ -441,7 +429,7 @@
 				// Set local description, and pass it to the server
 				peerConnection.setLocalDescription(description, function ()
 																				{
-				  																	socket.send(JSON.stringify({sdp: description, to: myTarget, from: myId}));
+				  																	socket.send(JSON.stringify({sdp: description, to: myTarget}));
 																				}, errorHandler);
 			}
 			
@@ -474,6 +462,9 @@
 
 				// Create local video
 				createVideo(window.URL.createObjectURL(localStream), 'localVideo');
+
+				// Tell my room that we can begins
+				socket.emit('imin');
 			}
 
 		</script>

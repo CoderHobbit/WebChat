@@ -1,6 +1,6 @@
-var app = require('express')();
-var http = require('http').Server(app);
-var io = require('socket.io')(http);
+var express = require('express')();
+var app = require('http').Server(express);
+var io = require('socket.io')(app);
 
 // Total population - for assigning ids
 var population = 0;
@@ -9,6 +9,31 @@ var sockets = [];
 // All rooms; each room has a name, password, population, and users
 var rooms = [];
 
+function findUser(socket)
+{
+	// Search through all the rooms
+	for(var i = 0; i < rooms.length; i ++)
+	{		
+		// Look at all the users
+		var rm = rooms[i];
+
+		console.log("Looking in room " + rm.getName());
+		
+		for(var j = 0; j < rm.getPopulation(); j ++)
+		{
+			// There they are?
+			if(rm.getUsers()[j].getSocket() === socket)
+			{
+				console.log("Found!");
+				return rm.getUsers()[j]; // There they are!
+			}
+		}	
+	}
+
+	console.log("404: User not found!");
+	// Didn't find anything :/
+	return false;
+}
 
 // Prototype of user
 function User(screenName, socket, room)
@@ -32,47 +57,45 @@ function User(screenName, socket, room)
 	this.getRoom = function() {return this.room;};
 	this.getId = function() {return this.id;};
 
-	// Callback helpers - get called by socket functions
-	this.messageHelper = function(m)
-								{
-									// Parse message
-									var info = JSON.parse(m);
-									// Log
-									console.log(this.screenName + ' received message for ', info.to);
-									// Shoot to room handler
-									this.room.sendToId(info.to, 'message', m);
-								}
-
-	this.disconnectHelper = function()
-									{
-										console.log(this.screenName + ' has left us!');
-										this.room.removeUser(this);
-										if(this.room.getPopulation() <= 0)
-										{
-											// Delete empty room
-											roomShredder(this.room);
-										}
-									}
-	this.iminHelper = function() // This one is initially disabled; enabled when this is added to a room
-							{
-								// Queue up to connect
-								this.room.connectionQueue.push(this);
-								// Run order if it isn't already running
-								if(!this.room.orderIsRunning)
-									this.room.runOrder(this.room.connectionQueue[0]);
-							}
-
-
 	// Behavior: messenger
 	// Parses and shoots socket messages to the room message handlers
-	this.socket.on('message', this.messageHelper);
+	this.socket.on('message', 
+						function(m)
+						{	
+							// Find myself
+							var usr = findUser(this);
+							// Add the return address
+							m.from = usr.getId();
+							// Parse message
+							var info = JSON.parse(m);
+							// Log
+							console.log(usr.screenName + ' received message for ', info.to);
+							// Shoot to room handler
+							usr.getRoom().sendToId(info.to, 'message', m);
+						});
+
 	// Callback for disconnecting
-	this.socket.on('disconnect', this.disconnectHelper);
-	// This would be called when a user finishes doing client side reg (setting its ID, etc.)
-	this.socket.on('imin',
+	this.socket.on('disconnect',
 						function()
 						{
-							// Disabled until this is added to a room
+							// Find myself
+							var usr = findUser(this);
+							// Log
+							console.log(usr.screenName + ' has left us!');
+							// Remove me from my room
+							usr.room.removeUser(usr);
+							// Shred my room
+							if(usr.getRoom().getPopulation() <= 0)
+							{
+								// Delete empty room
+								roomShredder(usr.room);
+							}
+						});
+	// This would be called when a user finishes doing client side reg (setting its ID, etc.)
+	this.socket.on('imin',
+						function() // This one is initially disabled; enabled when this is added to a room
+						{
+							// Disabled
 						});
 }
 
@@ -88,16 +111,12 @@ function Room(roomName, password)
 	// Functional stuff - used in connecting
 	// Order in which existing clients connect to a new one
 	this.orderOfConnections = [];
-	// Index in order
-	this.index = 0;
 	// Incoming client
 	this.receiver = null;
 	// State variable - for extra safety
 	this.orderIsRunning = false;
 	// Anyone who drops by while we are establishing connections will sit here
 	this.connectionQueue = [];
-	// Clients who have finished connecting to a new client
-	this.doneClients = [];
 	
 	// Behaviors: setters
 	this.setName = function(newName) {this.roomName = newName;};
@@ -105,18 +124,29 @@ function Room(roomName, password)
 	// Behaviors: getters
 	this.getName = function() {return this.roomName;};
 	this.getPassword = function() {return this.password;};
-	this.getUsers = function() {return this.population;};
-	this.getPopulation = function() {return this.users;};
+	this.getUsers = function() {return this.users;};
+	this.getPopulation = function() {return this.population;};
 	
 	// Behaviors: adder
 	this.addUser = function(newUser)
 						{
-							// Enabled the 'imin' callback
-							newUser.getSocket().on('imin', newUser.iminHelper);
 							// Register user
 							this.users.push(newUser);
 							// Increment population
 							this.population += 1;
+							console.log("Added " + newUser.getName() + " at index " + this.population - 1);
+							newUser.socket.on('imin',
+													function() // This one is initially disabled; enabled when this is added to a room
+													{
+														// Find myself
+														var usr = findUser(this);
+														console.log("Found: " + usr);
+														// Queue up to connect
+														usr.room.connectionQueue.push(usr);
+														// Run order if it isn't already running
+														if(!usr.room.orderIsRunning)
+															usr.room.runOrder(usr);
+													});
 						};
 	this.removeUser = function(ripUser)
 							{
@@ -136,14 +166,6 @@ function Room(roomName, password)
 									{
 										// Remove									
 										this.connectionQueue.splice(i, 1);
-									}
-								}
-								for(var i = 0; i < this.doneClients.length; i ++)
-								{
-									if(this.doneClients[i].getId() == ripUser.getId())
-									{
-										// Remove									
-										this.doneClients.splice(i, 1);
 									}
 								}
 								for(var i = 0; i < this.orderOfConnections.length; i ++)
@@ -179,7 +201,7 @@ function Room(roomName, password)
 									if(user.getId() == this.users[i].getId())
 									{
 										// Send message
-										this.users[i].getSOcket().send(msg);
+										this.users[i].getSocket().send(msg);
 									}
 								}
 							};
@@ -194,7 +216,7 @@ function Room(roomName, password)
 									if(user.getId() == this.users[i].getId())
 									{
 										// Emit message and data
-										this.users[i].getSOcket().emit(msg, data);
+										this.users[i].getSocket().emit(msg, data);
 									}
 								}
 							};
@@ -232,12 +254,11 @@ function Room(roomName, password)
 	// Starts order of connections. This connects users in the queue (connectionQueue)
 	this.runOrder = function(callTo)
 	{
-		console.log(this.roomName + ' has ' + this.population + ' users!');
 		if(this.population > 1)
 		{
 			console.log('Starting order of connections!');
 			// Set state
-			orderIsRunning = true;
+			this.orderIsRunning = true;
 			// Just to be sure, clean up order of connections
 			this.orderOfConnections.length = 0;
 			// Dump queue into order
@@ -251,14 +272,13 @@ function Room(roomName, password)
 			// Clear queue
 			this.connectionQueue.length = 0;
 			// Begin
-			this.index = 0;
-			var caller = this.orderOfConnections[this.index];
+			var caller = this.orderOfConnections[0];
 			this.receiver = callTo;
 			console.log('Got caller: ' + caller.getName() + ' : ' + caller.getId());
 			// Start with the first socket
 			console.log('Started!');
-			caller.getSocket().emit('start', {caller: caller.getId(), callto: this.receiver.getId()});
-			this.receiver.getSocket().emit('start', {caller: caller.getId(), callto: this.receiver.getId()});
+			caller.getSocket().emit('start', {you: 'caller', callto: this.receiver.getId()});
+			this.receiver.getSocket().emit('start', {you: 'receiver', callto: caller.getId()});
 			// Wait until done
 			caller.getSocket().on('doneConnecting', this.orderDone);
 			this.receiver.getSocket().on('doneConnecting',
@@ -268,57 +288,47 @@ function Room(roomName, password)
 														console.log(this.receiver.getName() + ' : ' + this.receiver.getID() + ' is done!');
 													});
 		}
-	}
+	};
 
 	// Once a user completes connecting, this fires
 	// Checks if the all ordered users have connected and returns; if not, connects next user in order
-	this.orderDone = function(doneId)
+	this.orderDone = function(socket)
 	{
-		console.log('Done connecting: ', doneId);
+		var doneUser = this.findUser(socket);
+		console.log('Done connecting: ', doneUser.getName());
 		// Last one done?
-		if(doneId == this.orderOfConnections[this.orderOfConnections.length - 1].getId())
+		if(this.orderOfConnections.length == 0)
 		{
-			console.log('All done!');
-			// Reset order
-			this.orderOfConnections.length = 0;
-			this.index = 0;
-			this.doneClients.length = 0;
-			// If anyone is queued up, re-run
-			if(this.connectionQueue.length > 0)
-				this.runOrder(this.connectionQueue[0]);
-			return;
-		}
-		// Otherwise, trudge on
-		else
-		{
-			// Make sure this one wasn't already done
-			for(var i = 0; i < this.doneClients.length; i ++)
+			// See if anyone dropped by while we were all connecting
+			if(this.connectionsQueue.length != 0)
 			{
-				if(this.doneClients[i].getId() == doneId)
-				{
-					console.log('Rejected: ', doneId);
-					return;
-				}
+				// Dump queue into order, keep trudging
+				this.orderOfConnections = this.connectionsQueue;
+				// Reset queue
+				this.connectionsQueue.length = 0;
 			}
-
-			// Register the finishing
-			for(var i = 0; i < this.users.length; i ++)
-				if(this.users[i].getId() == doneId)
-					this.doneClients.push(this.users[i]);
-
-			// Increase index
-			this.index ++;
-			// Find caller and receiver
-			var caller = this.orderOfConnections[this.index];
-			console.log(this.index, ' : ', caller.getName(), ' is calling ', this.receiver.getName());
-			// Have the caller call the receiver
-			caller.getSocket().emit('start', {caller: caller.getId(), callto: this.receiver.getId()});
-			this.receiver.getSocket().emit('start', {caller: caller.getId(), callto: this.receiver.getId()});
-			// Basically recursion
-			caller.getSocket().on('doneConnecting', this.orderDone);
-			this.receiver.getSocket().on('doneConnecting', function(){/*Do nothing*/});
+			else
+			{
+				// We're done!
+				console.log('All done!');
+				this.orderIsRunning = false;
+				return;
+			}
 		}
-	}
+		
+		// Otherwise, trudge on
+		// Pop order
+		this.orderOfConnections = this.orderOfConnections.splice(0,1);
+		// Find caller and receiver
+		var caller = this.orderOfConnections[0];
+		console.log(caller.getName(), ' is calling ', this.receiver.getName());
+		// Have the caller call the receiver
+		caller.getSocket().emit('start', {you: 'caller', callto: this.receiver.getId()});
+		this.receiver.getSocket().emit('start', {you: 'receiver', callto: caller.getId()});
+		// Basically recursion
+		caller.getSocket().on('doneConnecting', this.orderDone);
+		this.receiver.getSocket().on('doneConnecting', function(){/*Do nothing*/});
+	};
 
 	// Register room
 	rooms.push(this);
@@ -327,18 +337,18 @@ function Room(roomName, password)
 
 // Redirect commands, for accessing things
 // Html client
-app.get('/client', function(req, res)
+express.get('/client', function(req, res)
 						{
 							res.sendFile(__dirname+'/html/index.html');
 						});
 
 // Cascading Style Sheets file
-app.get('/css', function(req, res)
+express.get('/css', function(req, res)
 						{
 							res.sendFile(__dirname+'/css/css.css');
 						});
 // Icon
-app.get('/favicon.ico', function(req, res)
+express.get('/favicon.ico', function(req, res)
 							{
 								res.sendFile(__dirname+'/favicon.ico');
 							});
@@ -364,6 +374,8 @@ function roomShredder(room)
 	
 	// Delete room
 	delete room;
+	// Extra precaution because Javascript behaves in mysterious ways
+	room = false;
 
 	if(!room)
 		console.log('Shredded!');
@@ -401,7 +413,6 @@ function createRoom(n, p)
 // Authentication - logs into or creates a room
 function auth(socket, info)
 {
-	console.log("Got auth request: " + JSON.stringify(info));
 	console.log(info.uname + " wants to " + info.type + " " + info.rname);
 	// The room the user will be in
 	var room = false;
@@ -430,15 +441,19 @@ function auth(socket, info)
 	{
 		// It seems things went okay
 		console.log(info.type + " succeded!");
-		console.log('New room: ' + room.getName() + '; pop: ' + room.getPopulation());
 		// Create user
 		var user = new User(info.uname, socket, room);
-		// Debug message
-		console.log('Created ' + user.getName() + ' : ' + user.getId() + ' in ' + user.getRoom().getName() + '; global population: ' + population);
 		// Add to room
 		room.addUser(user);
+		// Debug message
+		console.log('Created ' + user.getName() + ' : ' + user.getId() + ' in ' + user.getRoom().getName() + ' (population: ' + (room.getUsers().length || room.getPopulation()) + '); global population: ' + population);
+		
+		for(i = 0; i < room.getUsers().length; i++)
+			if(room.getUsers()[i] == user)
+				console.log(user.getName() + " is in " + room.getName() + "!");
+
 		// Woohoo start
-		user.getSocket().emit("youin", user.getId());
+		user.getSocket().emit("youin");
 	}
 }
 
@@ -459,6 +474,10 @@ function onConnection(socket)
 // Callback for when someone connects
 io.on('connection', onConnection);
 
-http.listen(1755, function(){
-		     console.log('Listening on *: 1755');
+// Port and ip configuration
+var port = process.env.OPENSHIFT_NODEJS_PORT || 1755;
+var ip = process.env.OPENSHIFT_NODEJS_IP || 'localhost';
+
+app.listen(port, ip, function(){
+		     console.log('Listening: ' + ip + ':' + port);
 		     });
