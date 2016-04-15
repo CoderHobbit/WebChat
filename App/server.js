@@ -69,7 +69,7 @@ function User(screenName, socket, room)
 							// Parse message
 							var info = JSON.parse(m);
 							// Log
-							console.log(usr.screenName + ' received message for ', info.to);
+							//console.log(usr.screenName + ' received message for ', info.to);
 							// Shoot to room handler
 							usr.getRoom().sendToId(info.to, 'message', m);
 						});
@@ -184,7 +184,7 @@ function Room(roomName, password)
 	// Emits contents of msg to all users in the room
 	this.broadcast = function(msg, data)
 							{
-								console.log(this.roomName + ': Broadcasting ' + msg + ' : ' + data);
+								//console.log(this.roomName + ': Broadcasting ' + msg + ' : ' + data);
 								// Cycle through all users, send msg to each socket
 								for(var i = 0; i < this.users.length; i ++)
 								{
@@ -194,7 +194,7 @@ function Room(roomName, password)
 	// Sends msg to specified user (must comply with user prototype above)
 	this.sendToUser = function(user, msg)
 							{
-								console.log(this.roomName + ': Sending (' + msg + ') to ' + user.getName());
+								//console.log(this.roomName + ': Sending (' + msg + ') to ' + user.getName());
 								// Make sure user is in this room
 								for(var i = 0; i < this.users.length; i ++)
 								{
@@ -209,7 +209,7 @@ function Room(roomName, password)
 	// Emits msg and data to specified user (must comply with user prototype above)
 	this.emitToUser = function(user, msg, data)
 							{
-								console.log(this.roomName + ': Emitting (' + msg +  ' : ' + data + ') to ' + user.getName());
+								//console.log(this.roomName + ': Emitting (' + msg +  ' : ' + data + ') to ' + user.getName());
 								// Make sure user is in this room
 								for(var i = 0; i < this.users.length; i ++)
 								{
@@ -223,7 +223,7 @@ function Room(roomName, password)
 	// Sends msg to user with specified id
 	this.sendToId = function(id, msg)
 							{
-								console.log(this.roomName + ': Sending (' + msg + ') to ' + id);
+								//console.log(this.roomName + ': Sending (' + msg + ') to ' + id);
 								// Find the user
 								for(var i = 0; i < this.users.length; i ++)
 								{
@@ -238,7 +238,7 @@ function Room(roomName, password)
 	// Emits msg to user with specified id
 	this.sendToId = function(id, msg, data)
 							{
-								console.log(this.roomName + ': Emitting (' + msg + ' : ' + data + ') to ' + id);
+								//console.log(this.roomName + ': Emitting (' + msg + ' : ' + data + ') to ' + id);
 								// Find the user
 								for(var i = 0; i < this.users.length; i ++)
 								{
@@ -297,7 +297,7 @@ function Room(roomName, password)
 		var doneUser = this.findUser(socket);
 		console.log('Done connecting: ', doneUser.getName());
 		// Last one done?
-		if(this.orderOfConnections.length == 0)
+		if(this.orderOfConnections.length == 1)
 		{
 			// See if anyone dropped by while we were all connecting
 			if(this.connectionsQueue.length != 0)

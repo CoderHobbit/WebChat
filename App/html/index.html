@@ -329,12 +329,12 @@
 				// Parse message			
 				var signal = JSON.parse(m);
 				
-				console.log('Pulling up pc with ', signal.from);				
+				console.log('Pulling up pc with ', myTarget);				
 				
 				// Find the correct peerConnection
 				peerConnection = null;
 				for(var i = 0; i < peers.length; i ++)
-					if(peers[i].id == signal.from)
+					if(peers[i].id == myTarget)
 						peerConnection = peers[i].pc;
 				
 				// If we aren't connected, become connected
@@ -355,7 +355,7 @@
 																			{
 																				peerConnection.createAnswer(gotDescription, errorHandler, sdpConstraints);
 																			}
-																			// We are ready to begin adding candidates
+																			// We are ready to begin adding ICE candidates
 																			peerConnection.onicecandidate = gotIceCandidate;
 																			console.log('Set remote SDP, procceed with ICE gathering!');
 																			// Can probably let other people start (no other reliable checkpoint)
@@ -363,11 +363,11 @@
 																	}, errorHandler);
 
 				} 
-				// Check if we are being sent a candidate
+				// Check if we are being sent an ICE candidate
 				else if(signal.candidate) 
 				{
 					// Create a candidate from the info
-					var candidate = new RTCIceCandidate(signal.candidate, signal.sdpMLineIndex);
+					var candidate = new RTCIceCandidate(signal.candidate/*, signal.sdpMLineIndex*/);
 					// Add the candidate
 					peerConnection.addIceCandidate(candidate, function()
 																			{
