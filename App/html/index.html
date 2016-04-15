@@ -12,20 +12,20 @@
 	</head>
 
 	<body>
-		
-		<form id = 'loginForm'>
-			Screen Name*: <br>
-			<input type = 'text' name = 'uname' id = 'uname'><br>
-			Room Name*: <br>
-			<input type = 'text' name = 'rname' id = 'rname'><br>
-			Room Password (if applicable): <br>
-			<input type = 'password' name = 'pass' id = 'pass'><br>
-			(* = required)
-		
-			<button type = 'button' name = 'login' id = 'login'>Log In</button>
-			<button type = 'button' name = 'create' id = 'create'>Create</button>
-		</form>
-
+		<div id = 'loginBody'>
+			<fieldset id = 'loginForm'>
+				Screen Name*: <br>
+				<input type = 'text' name = 'uname' id = 'uname'><br>
+				Room Name*: <br>
+				<input type = 'text' name = 'rname' id = 'rname'><br>
+				Room Password (if applicable): <br>
+				<input type = 'password' name = 'pass' id = 'pass'><br>
+				(* = required)
+				<button type = 'button' name = 'login' id = 'login'>Log In</button>
+				<button type = 'button' name = 'create' id = 'create'>Create</button>
+			</fieldset>
+			
+		</div>
 		<script src="/socket.io/socket.io.js"></script>
 
 		<div id = 'videos'>
@@ -167,7 +167,7 @@
 			socket.on('youin', function(id)
 											{
 												// Remove form
-												var form = document.getElementById('loginForm');
+												var form = document.getElementById('loginBody');
 												form.setAttribute('hidden', true);
 												// Enable signaling
 												socket.on('message', gotMessageFromServer);

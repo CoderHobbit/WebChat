@@ -140,7 +140,7 @@ function Room(roomName, password)
 													{
 														// Find myself
 														var usr = findUser(this);
-														console.log("Found: " + usr);
+														console.log("Found: " + usr.getName());
 														// Queue up to connect
 														usr.room.connectionQueue.push(usr);
 														// Run order if it isn't already running
