@@ -587,7 +587,7 @@ function onConnection(socket)
 io.on('connection', onConnection);
 
 // Port and ip configuration
-var port = process.env.OPENSHIFT_NODEJS_PORT || 1755;
+var port = /*process.env.OPENSHIFT_NODEJS_PORT ||*/ 1755;
 var ip = process.env.OPENSHIFT_NODEJS_IP || 'localhost';
 
 app.listen(port, ip, function(){

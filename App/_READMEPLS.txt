@@ -1,6 +1,9 @@
 WebChat: a live videoconference app, akin to Google Hangouts. Uses WebRTC APIs for functionality.
 Purpose: create a modified Google Hangouts, which allows one to silence oneself to other users (if user 1 silences themselves to user 2, then user 3 can still hear
 		user 1, but user 2 cannot)
+
+rhc app create WebChat -n caccculinary -t nodejs-0.10 --scaling --from-code https://www.github.com/LolingLenin/WebChat.git
+
 Creators: Sergey Gruzdev (sergeygruzdev98@gmail.com) and Boston Messbarger (bostger@gmail.com)
   	   ^JavaScript and functionality	          ^ HTML, CSS, animation, and appearance
 
