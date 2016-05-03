@@ -106,25 +106,25 @@ function findUserById(id)
 }
 
 /*
-* Object Prototype User: an object prototype representing a user.
-* Usage: var usr = new User("blah", blahSocket, blahRoom);
-* Precondition: 
-*				screenName is a valid string passed by user;
-*				room is a valid Room;
-*				socket is a valid websocket.
-* Postcondition: created a new User (DOES NOT add to room - idk why, design choices - do that manually).
-* Parameters: 
-*				screenName - user's desired name; 
-*				socket - user's websocket;
-*				room - room user will be in.
-* Return value: a User object.
-* 
-* Attributes:
-*				this.screenName - screen name corresponding to the User;
-*				this.socket - websocket corresponding to the User;
-*				this.room - room containing this User;
-*				this.id - User's ID, assigned automatically.
-*/
+ * Object Prototype User: an object prototype representing a user.
+ * Usage: var usr = new User("blah", blahSocket, blahRoom);
+ * Precondition: 
+ *				screenName is a valid string passed by user;
+ *				room is a valid Room;
+ *				socket is a valid websocket.
+ * Postcondition: created a new User (DOES NOT add to room - idk why, design choices - do that manually).
+ * Parameters: 
+ *				screenName - user's desired name; 
+ *				socket - user's websocket;
+ *				room - room user will be in.
+ * Return value: a User object.
+ * 
+ * Attributes:
+ *				this.screenName - screen name corresponding to the User;
+ *				this.socket - websocket corresponding to the User;
+ *				this.room - room containing this User;
+ *				this.id - User's ID, assigned automatically.
+ */
 function User(screenName, socket, room)
 {
 	// Attributes of user: name, socket, room, id
@@ -151,7 +151,7 @@ function User(screenName, socket, room)
 
 	// Websocket event listeners
 	/*
-	 * Callback on message: function that activates every time this socket receives a message (from end user)
+	 * Callback on message: activates every time this socket receives a message (from end user)
 	 * Precondition: none really.
 	 *	Postcondition: socket responds to messages.
 	 * Parameters: m - message sent to socket
@@ -174,6 +174,10 @@ function User(screenName, socket, room)
 
 	/*
 	 * Callback on disconnect: activates when this socket loses its connection
+	 * Precondition: end user has disconnected
+    * Postcondition: user has been removed from everything. If user was last in their room, the room has been shredded
+    * Parameters: none
+	 * Return value: none
 	 */
 	this.socket.on('disconnect',
 						function()
@@ -191,15 +195,27 @@ function User(screenName, socket, room)
 								roomShredder(usr.room);
 							}
 						});
-	//
-	this.socket.on('imin',
+	/*
+	 * Callback for "imin": activates when the "imin" event is fired. Initially disabled; set when user is added to room
+    * Precondition: user has been added to a valid room
+	 * Postcondition: user has been added to connection frenzy. Now user can communicate with the others
+	 * Parameters: none
+    * Return value: none
+	 */
+	this.socket.on('imin', // User fires this "i'm in (the room)" event whenever they are ready to enter the connection frenzy
 						function() // This one is initially disabled; enabled when this is added to a room
 						{
 							// Disabled
 						});
 }
 
-// Prototype of room
+/*
+ * Object Prototype Room: an object prototype representing a room
+ * Precondition: no other room called roomName exists; roomName and password are valid strings
+ * Postcondition: a new room with name roomName and password password
+ * Parameters:
+ *				roomName - desired name of room 
+ */
 function Room(roomName, password)
 {
 	// Properties of room: name, password, population, set of users
