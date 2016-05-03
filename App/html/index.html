@@ -52,7 +52,7 @@
  											'OfferToReceiveAudio':true,
   											'OfferToReceiveVideo':true }};
 
-			// Temporary video var
+			// Temporary video container
 			var video = null;
 			// All video streams
 			var vidArr = [];
@@ -66,6 +66,8 @@
 			var numVids = 0;
 			// Constraint variable for controlling order of events
 			var iAmOfferer = false;
+			// Me
+			var myId = 0;
 			// Who I talk to
 			var myTarget = 0;
 			// Create a div to hold the active video
@@ -82,6 +84,21 @@
 			var logIn = document.getElementById('login');
 			var create = document.getElementById('create');
 
+
+			// JSON Parses - only parses a thing if it is parsable, otherwise returns the thing
+			function parseJSON(thing)
+			{
+				var result = false;
+				try
+				{
+					result = JSON.parse(thing);
+				}
+				catch(e)
+				{
+					result = thing;
+				}
+				return result;
+			}
 
 			login.onclick = function()
 									{
@@ -104,7 +121,6 @@
 										// If all needed information is present - send to server
 										// Put it in a JSON
 										var data = JSON.stringify({type : 'login', uname : uname, rname : rname, pass : pass});
-										console.log("Sending this: " + data);
 										socket.emit('auth', data);
 									};
 
@@ -132,7 +148,6 @@
 										
 										// Put it in a JSON
 										var data = JSON.stringify({type : 'create', uname : uname, rname : rname, pass : pass});
-										console.log("Sending this: " + data);
 										socket.emit('auth', data);
 									};
 				
@@ -171,12 +186,15 @@
 												form.setAttribute('hidden', true);
 												// Enable signaling
 												socket.on('message', gotMessageFromServer);
+												// Set my id
+												myId = id;
 												// Get local video
 												navigator.getUserMedia(constraints, gotMedia, errorHandler);
 											});
 			socket.on('start',
 							function(info)
 							{
+								info = parseJSON(info);
 								// Is it my turn?
 								if(info.you === 'caller')
 								{
@@ -188,7 +206,7 @@
 								}
 								else if(info.you === 'receiver')
 								{
-									console.log('Call from ', info.caller);
+									console.log('Call from ', info.callto);
 									// Talk to the caller!
 									myTarget = info.callto;
 								}
@@ -215,6 +233,7 @@
 				// Keep track of connections
 				peers.push({pc: peerConnection, id: myTarget});
 				
+				return;
 			}
 			
 			// Creates a video div and button with given video v
@@ -327,7 +346,7 @@
 			function gotMessageFromServer(m) 
 			{
 				// Parse message			
-				var signal = JSON.parse(m);
+				var signal = parseJSON(m);
 				
 				console.log('Pulling up pc with ', myTarget);				
 				
@@ -341,7 +360,7 @@
 				if(!peerConnection)
 					start();
 				
-
+				console.log("Checking message");
 				// Check if we are being sent a remote SDP (answer)
 				if(signal.sdp) 	
 				{
@@ -359,7 +378,7 @@
 																			peerConnection.onicecandidate = gotIceCandidate;
 																			console.log('Set remote SDP, procceed with ICE gathering!');
 																			// Can probably let other people start (no other reliable checkpoint)
-																			socket.emit('doneConnecting', socket);
+																			socket.emit('doneConnecting', myId);
 																	}, errorHandler);
 
 				} 

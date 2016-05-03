@@ -2,8 +2,10 @@ WebChat: a live videoconference app, akin to Google Hangouts. Uses WebRTC APIs f
 Purpose: create a modified Google Hangouts, which allows one to silence oneself to other users (if user 1 silences themselves to user 2, then user 3 can still hear
 		user 1, but user 2 cannot)
 Creators: Sergey Gruzdev (sergeygruzdev98@gmail.com) and Boston Messbarger (bostger@gmail.com)
-	  ^ JavaScript and functionality		 ^ HTML, CSS, animation, and appearance
-Specs:	- Support for "chat rooms"
+  	   ^JavaScript and functionality	          ^ HTML, CSS, animation, and appearance
+
+Specs:	
+ 	- Support for "chat rooms"
 	- Support for multiple users in each chatroom
 	- Simple UI
 	- Users can create chatrooms
@@ -12,19 +14,25 @@ Specs:	- Support for "chat rooms"
 	- Users can leave room when they wish
 	- Dynamic video layout and sizing - support for different-sized screens
 
-TODO:	- Support for "chat rooms"
-	- Authentication
-	- Everything having to do with chatrooms
+TODO:
 	- Dynamic sizing and support for different screens
+	- Support for OpenShift (if adminstartion doesn't respond) or maybe other online hosting
+	- Support for going back to login screen (leave room, destroy all videos, re-appear login form)
 
-Admin stuff: 	- Get permission from CPS to install WebChat (so they don't shut down the network when the traffic shifts)
+Admin stuff: 	
+		- Get permission from CPS to install WebChat (so they don't shut down the network when the traffic shifts)
 		- Add server (big grey old computer) to network, finish configuring Win10
 		- Install WebChat on server
 		- Install security certificate on server, to use "https"
 		- Make sure "node server.js" is run on startup
 		- Maybe get a domain name to ease access to the service
+		- WebChat google account: cacccculinarywebchat@gmail.com; password: javascriptIsWeird
+		- Potential idea: OpenShift (free online hosting for Node js apps)
+		- Use OpenShift account we created for you (login with webchat gmail, same password)
 
-Installation:	1) Install Git (https://git-scm.com/downloads)
+
+Installation (on server box):	
+		1) Install Git (https://git-scm.com/downloads)
 		2) Install NodeJS and NPM (https://nodejs.org/en/)
 		3) Clone WebChat directory: https://github.com/LolingLenin/WebChat.git (contact me if it doesn't allow you)
 		4) Open cmd, cd into WebChat/App
@@ -33,25 +41,28 @@ Installation:	1) Install Git (https://git-scm.com/downloads)
 		7) Reboot
 		8) (Optional) run "node server.js" in cmd to run the server manually
 
-Acceesing/Usage: 1) Make sure server.js is running
+Installation (on OpenShift): connect git repo (master branch) with OpenShift, then just push
+
+Acceesing/Usage (on server box): 
+		 1) Make sure server.js is running
 		 2) If on local machine, navigate to "https://localhost:1755/client"
 		 3) If on remote machine, navigate to the IP of the server: "https://###.###.###.###:1755/client"
-		 4) Type "caccculinary" when prompted for password (temporary security)
-		 5) Done - wait for other clients
+		 4) Type in a screen name and room name (password optional)
+		 5) Choose "Log In" if room already exists, otherwise choose "Create"
+		 6) Done - wait for other clients
 
 Files:
 	-favicon.ico: the image that appears on your browser tab
 	-datServer.bat: runs "node server.js"
 	-css.css: all css stuff for appearance
-	-test.html: for testing WebRTC components, mainly getUserMedia
 	-index.html: client-side functionality
+			- Provides UI for authentication
 			- Captures user media and sends to other clients
 			- Displays local and received media
 			- Communicates with server to establish connections
 				- Order of operations for connections is somewhat dynamic, see WebRTC websites and forums for generic breakdown
 				- Operations run "assynchrously" - one function does not necessarily wait for its pre-requisite to finish
 			- Displays and enables functionality of buttons
-			- Runs client-side authentication (inputting password, etc., server.js handles the actual authentication)
 			- This is where all client-side stuff goes
 	-server.js: server-side functionality
 			- Enables communication between clients
@@ -68,3 +79,4 @@ Considertations:
 		we don't know if that is due to lag or if there are internal problems.
 	- If WebRTC releases support for centralized (server-side) handling of video for multiple clients, implement it and put on stronger server - better for clients
 	- Since dynamic sizing is not supported yet, when you startup WebChat odds are you won't see any video. Don't panic - just scroll down.
+   - Evidently we;re having trouble with connecting a third user, take a look at that
