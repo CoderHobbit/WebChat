@@ -33,36 +33,36 @@
 
 
 		<script>
-			// Init socket
+			// Initialize socket - for messaging with the server
 			var socket = io();
 
-			// Init getUserMedia
+			// Initialize getUserMedia - for camera capture
 			navigator.getUserMedia = navigator.getUserMedia || navigator.webkitGetUserMedia || navigator.mozGetUserMedia;
-			// Init peerConnection
+			// Initialize peerConnection - for connecting with other users
 			RTCPeerConnection = window.RTCPeerConnection || window.mozRTCPeerConnection || window.webkitRTCPeerConnection;
-			// Init sessionDescription
+			// Initialize sessionDescription - for WebRTC internal stuff
 			RTCSessionDescription = window.RTCSessionDescription || window.mozRTCSessionDescription || window.webkitRTCSessionDescription;
 			
 
-			// Initialize some config variables
+			// Initialize some config variables, for more WebRTC internal stuff
 			var connection = {iceServers:[{'url':'stun:stun.l.google.com:19302'}, {'url': 'turn:homeo@turn.bistri.com:80', 'credential': 'homeo'}]};
 			var config = { 'optional': [{'DtlsSrtpKeyAgreement': true}, {'RtpDataChannels': true }] };
-			var constraints = { video : true, audio : true };
-			var sdpConstraints = {'mandatory': {
+			var constraints = { video : true, audio : true }; // What getUserMedia captures from the camera
+			var sdpConstraints = {'mandatory': {				  // What streams we offer to exchange with others
  											'OfferToReceiveAudio':true,
   											'OfferToReceiveVideo':true }};
 
-			// Temporary video container
+			// Temporary video container - for any video work
 			var video = null;
 			// All video streams
 			var vidArr = [];
-			// Local video
+			// Local video stream
 			var localStream = null;
-			// PeerConnection storage
+			// Connections with other users
 			var peers = [];
-			// Active peerConnection
+			// Active peerConnection - for connection work
 			var peerConnection = null;
-			// Number of video elements created - skip the server
+			// Number of video elements created
 			var numVids = 0;
 			// Constraint variable for controlling order of events
 			var iAmOfferer = false;
@@ -70,7 +70,7 @@
 			var myId = 0;
 			// Who I talk to
 			var myTarget = 0;
-			// Create a div to hold the active video
+			// Create a div to hold the active video (the one they click on)
 			var bigDiv = document.createElement('div');
 			bigDiv.id = 'bigVideo';
 			// Class and dimensions
@@ -80,12 +80,18 @@
 			// Add to page
 			document.body.appendChild(bigDiv);
 			
-			// Set button onclick behaviors
+			// Buttons, for setting onclick behaviors
 			var logIn = document.getElementById('login');
 			var create = document.getElementById('create');
 
 
-			// JSON Parses - only parses a thing if it is parsable, otherwise returns the thing
+			/*
+   		 * parseJSON: checks to see if thing is parsable JSON, and parses it if so
+  			 * Precondition: none
+			 * Postcondition: none
+			 * Parameter: thing - thing to check and parse
+			 * Return value: TODO
+			 */
 			function parseJSON(thing)
 			{
 				var result = false;
@@ -99,7 +105,14 @@
 				}
 				return result;
 			}
-
+	
+			/*
+			 * Button onclick callbacks: send form contents to the server depending on which button was clicked
+ 			 * Precondition: all required fields in form have been filled out
+			 * Postcondition: login/create request sent to the server
+			 * Parameters: none
+			 * Return value: none
+			 */
 			login.onclick = function()
 									{
 										console.log("Click!");
@@ -152,8 +165,11 @@
 									};
 				
 
-			// Message callbacks
-			// Disconnect handler
+			// Server message comebacks
+			/*
+			 * someoneLeft callback: fires when the server informs us that someone has disconnected
+			 * 
+			 */
 			socket.on('someoneLeft', 
 							function(dead)
 							{

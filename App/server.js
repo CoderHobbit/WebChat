@@ -109,21 +109,21 @@ function findUserById(id)
  * Object Prototype User: an object prototype representing a user.
  * Usage: var usr = new User("blah", blahSocket, blahRoom);
  * Precondition: 
- *				screenName is a valid string passed by user;
- *				room is a valid Room;
- *				socket is a valid websocket.
- * Postcondition: created a new User (DOES NOT add to room - idk why, design choices - do that manually).
+ *				screenName is a valid string passed by user
+ *				room is a valid Room
+ *				socket is a valid websocket
+ * Postcondition: created a new User (DOES NOT add to room - idk why, design choices - do that manually)
  * Parameters: 
- *				screenName - user's desired name; 
- *				socket - user's websocket;
- *				room - room user will be in.
- * Return value: a User object.
+ *				screenName - user's desired name 
+ *				socket - user's websocket
+ *				room - room user will be in
+ * Return value: a User object
  * 
  * Attributes:
- *				this.screenName - screen name corresponding to the User;
- *				this.socket - websocket corresponding to the User;
- *				this.room - room containing this User;
- *				this.id - User's ID, assigned automatically.
+ *				this.screenName - screen name corresponding to the User
+ *				this.socket - websocket corresponding to the User
+ *				this.room - room containing this User
+ *				this.id - User's ID, assigned automatically
  */
 function User(screenName, socket, room)
 {
@@ -152,8 +152,8 @@ function User(screenName, socket, room)
 	// Websocket event listeners
 	/*
 	 * Callback on message: activates every time this socket receives a message (from end user)
-	 * Precondition: none really.
-	 *	Postcondition: socket responds to messages.
+	 * Precondition: none
+	 *	Postcondition: socket responds to messages
 	 * Parameters: m - message sent to socket
 	 * Return value: none
 	 */
@@ -210,11 +210,23 @@ function User(screenName, socket, room)
 }
 
 /*
- * Object Prototype Room: an object prototype representing a room
- * Precondition: no other room called roomName exists; roomName and password are valid strings
- * Postcondition: a new room with name roomName and password password
+ * Object Prototype Room: an object prototype representing a chatroom
+ * Precondition: no other Room called roomName exists; roomName and password are valid strings
+ * Postcondition: a new Room with name roomName and password password
  * Parameters:
- *				roomName - desired name of room 
+ *				roomName - desired name of room supplied by user
+ * 			password - desired room password supplied by user
+ * Return value: new Room object
+ *
+ * Attributes:
+ *				this.roomName - name of chatroom (must be unique)
+ * 			this.password - password to access chatroom
+ * 			this.population - total count of all users
+ *				this.users - array of Users in chatroom
+ *				this.orderOfConnections - users waiting to connect to each other
+ * 			this.receiver - current user receiving all connection requests
+ *				this.orderIsRunning - flag for whether or not connection frenzy is happening
+ *				this.connectionQueue - if frenzy is happening, users are deposited here, to await next connection round
  */
 function Room(roomName, password)
 {
@@ -243,7 +255,13 @@ function Room(roomName, password)
 	this.getUsers = function() {return this.users;};
 	this.getPopulation = function() {return this.population;};
 	
-	// Behaviors: adder
+	/*
+	 * addUser: adds newUser to this Room's list of users and sets the 'imin' callback
+	 * Precondition: newUser is a valid User object and is not already in this Room
+	 * Postcondition: newUser is added to this Room's list of users, server can respond to 'imin' event from User
+    * Parameter: newUser - a valid User to be added to the room
+	 * Return value: none
+	 */
 	this.addUser = function(newUser)
 						{
 							// Register user
@@ -251,19 +269,25 @@ function Room(roomName, password)
 							// Increment population
 							this.population += 1;
 							console.log("Added " + newUser.getName() + " at index " + this.population - 1);
+							// Enabled 'imin' callback
 							newUser.socket.on('imin',
-													function() // This one is initially disabled; enabled when this is added to a room
+													function()
 													{
 														// Find myself
 														var usr = findUser(this);
 														console.log("Found: " + usr.getName());
-														// Queue up to connect
-														//usr.room.connectionQueue.push(usr);
 														// Run order if it isn't already running
 														if(!usr.room.orderIsRunning)
 															usr.room.runOrder();
 													});
 						};
+   /*
+	 * removeUser: removes ripUser from this Room
+    * Precondition: ripUser is a valid User object
+    * Postcondition: ripUser is no longer referenced in this Room
+    * Parameter: ripUser - User to be removed from this Room
+    * Return value: none
+    */
 	this.removeUser = function(ripUser)
 							{
 								// Find
@@ -296,47 +320,59 @@ function Room(roomName, password)
 								this.population -= 1;
 							};
 
-	// Behaviors: messengers
-	// Emits contents of msg to all users in the room
+	/*
+	 * Messengers: functions for sending messages to various users
+  	 * Precondition: messages and data (probly stringified JSON) are valid strings, user IDs are valid numbers, Users are valid User objects
+	 * Postcondition: msg and data have been sent to the destination (see specific behaviors for specific postconditions)
+    * Parameters:
+	 *					msg - message/event to be sent
+    *					data - stringified JSON, whatever additional data needed
+    *					user - recipient of message and data
+    *					id - User ID by which the recipient can be found
+	 * Return values: none
+    * Note: difference between socket.emit and socket.send:
+	 *				socket.emit requires both a msg (event) and data (actual message), and is caught by socket.on(msg/event) listeners
+    *				socket.send requires only data/msg, and is equivalent to 'socket.emit("message", data/msg)'
+    */
+
+	// Postcondition: msg and data have been sent to all the users in this room
 	this.broadcast = function(msg, data)
 							{
-								//console.log(this.roomName + ': Broadcasting ' + msg + ' : ' + data);
 								// Cycle through all users, send msg to each socket
 								for(var i = 0; i < this.users.length; i ++)
 								{
 										this.users[i].getSocket().emit(msg, data);
 								}
 							};
-	// Sends msg to specified user (must comply with user prototype above)
-	this.sendToUser = function(user, msg)
+	// Postcondition: data has been sent to specified valid User
+	this.sendToUser = function(user, data)
 							{
-								console.log(this.roomName + ': Sending message to ' + recip.getName());
-								// Send message
-								user.getSocket().send(msg);
+								console.log(this.roomName + ': Sending message to ' + user.getName());
+								// Send data
+								user.getSocket().send(data);
 							};
 
-	// Emits msg and data to specified user (must comply with user prototype above)
+	// Postcondition: msg and data has been sent to specified valid User
 	this.emitToUser = function(user, msg, data)
 							{
 								// Find the user
-								var recip = findUserById(id);
-								console.log(this.roomName + ': Emitting message to ' + recip.getName());
+								console.log(this.roomName + ': Emitting message to ' + user.getName());
 								// Send message
-								recip.getSocket().emit(msg, data);
+								user.getSocket().emit(msg, data);
 							};
-	// Sends msg to user with specified id
-	this.sendToId = function(id, msg)
+	// Postcondition: data has een sent to User with specified ID
+	this.sendToId = function(id, data)
 							{
 								
 								// Find the user
 								var recip = findUserById(id);
 								console.log(this.roomName + ': Sending message to ' + recip.getName());
 								// Send message
-								recip.getSocket().send(msg);
+								recip.getSocket().send(data);
 
 							};
 
-	// Emits msg to user with specified id
+	// Postcondition: msg and data has been sent to User with specified ID
 	this.emitToId = function(id, msg, data)
 							{
 								// Find the user
@@ -346,11 +382,18 @@ function Room(roomName, password)
 								recip.getSocket().emit(msg, data);
 							};
 
-	// Functional behaviors: handle the connecting process
-	// Starts order of connections. This connects users in the queue (connectionQueue)
+	/*
+	 * runOrder: users in connectionQueue take turns connecting to each other and users in the room
+    * Precondition: orderIsRunning is false, there is at least 1 user in this room
+    * Postcondition: orderIsRunning is true, connection frenzy is going on
+    * Parameter: none
+    * Return value: none
+    */
 	this.runOrder = function()
 	{
+		// Debug message
 		console.log("Populations: " + this.users.length + " + " + this.connectionQueue.length);
+		// Make sure we have at least 1 user
 		if(this.users.length >= 1)
 		{
 			console.log('Starting order of connections!');
@@ -358,19 +401,21 @@ function Room(roomName, password)
 			this.orderIsRunning = true;
 			// Just to be sure, clean up order of connections
 			this.orderOfConnections.length = 0;
-			// Dump users into order, skip over the one's in the Queue
+			// Dump current users into order, skip the ones in connectionQueue
 			this.orderOfConnections = this.users.slice(0, this.users.length);
 			console.log('Dumped users into order: ' + this.orderOfConnections.length);
 			// Begin
-			var caller = this.orderOfConnections[0];
-			this.receiver = this.connectionQueue[0];
+			var caller = this.orderOfConnections[0]; // Each user in orderOfConnections takes a turn being the caller
+			this.receiver = this.connectionQueue[0]; // Each user in connectionQueue takes a turn being the receiver
+			// Debug messages
 			console.log('Got caller: ' + caller.getName() + ' : ' + caller.getId());
 			console.log('Got receiver: ' + this.receiver.getName() + ' : ' + this.receiver.getId());
-			// Start with the first socket
 			console.log('Started!');
+			// The users themselves will handle connecting, WebRTC style
+         // Inform caller and receiver to assume their assigned roles in the connection
 			caller.getSocket().emit('start', JSON.stringify({you: 'caller', callto: this.receiver.getId()}));
 			this.receiver.getSocket().emit('start', JSON.stringify({you: 'receiver', callto: caller.getId()}));
-			// Wait until done
+			// Once the caller and receiver are done connecting, we continue cycling
 			caller.getSocket().on('doneConnecting', this.orderDone);
 			this.receiver.getSocket().on('doneConnecting',
 													function()
@@ -379,6 +424,7 @@ function Room(roomName, password)
 														console.log('Someone is done!');
 													});
 		}
+		// No users in the room - transfer one from the connectionQueue and rerun this function
 		else if(this.connectionQueue.length > 1)
 		{
 			console.log("Transferring single user from queue into users");
@@ -388,6 +434,7 @@ function Room(roomName, password)
 			// Rerun this function
 			this.runOrder();
 		}
+		// 1 or less users in connectionQueue, so transfer them to the room
 		else
 		{
 			
@@ -398,19 +445,30 @@ function Room(roomName, password)
 		}
 	};
 
-	// Once a user completes connecting, this fires
-	// Checks if the all ordered users have connected and returns; if not, connects next user in order
+	/*
+	 * orderDone: fires whenever a caller finished connecting,
+	 *				  sets caller to next person in orderOfConnections,
+	 *				  OR, if we've reached the last caller, set receiver to next person in connectionQueue
+	 * 					and rerun the order,
+	 *				  OR, if we've cycled through the entire queue, we're done
+	 * Precondition: orderIsRunning is true, runOrder has been called at least once
+    * Postconditions: 
+	 *						orderIsRunning if false
+    *						all Users in this room are connected to each other (mesh topology)
+	 * 					orderOfConnections is empty, connectionQueue may not be (in case someone dropped by near the end of the frenzy)
+	 * Parameter: id - id of the caller that has just finished
+    * Return value: none
+    */
 	this.orderDone = function(id)
 	{
+		// Find user and room
 		var doneUser = findUserById(id);
 		var room = doneUser.getRoom();
 		console.log('Done connecting: ', doneUser.getName());
-		// Pop order
-		console.log(room.users.length);
+		// Clip orderOfConnections
 		room.orderOfConnections.splice(0,1);
 		console.log(room.orderOfConnections.length + " users to go!");
-		console.log(room.users.length);
-		// Last one done?
+		// Last caller?
 		if(room.orderOfConnections.length == 0)
 		{
 			// Push new user
@@ -418,7 +476,7 @@ function Room(roomName, password)
 			room.getUsers().push(room.connectionQueue[0]);
 			// Clip connection queue
 			room.connectionQueue.splice(0,1);
-			// See if anyone remains in the queue
+			// Any more receivers?
 			if(room.connectionQueue.length != 0)
 			{
 				// Restart connection process
@@ -433,20 +491,21 @@ function Room(roomName, password)
 			}
 		}
 		
-		// Otherwise, trudge on
-		// Find caller and receiver
+		// Still have callers left - trudge on
+		// Set caller
 		var caller = room.orderOfConnections[0];
+		// Messages
 		console.log('Got caller: ' + caller.getName() + ' : ' + caller.getId());
 		console.log('Got receiver: ' + room.receiver.getName() + ' : ' + room.receiver.getId());
-		// Have the caller call the receiver
+		// Alert caller and receiver to assume their roles
 		caller.getSocket().emit('start', {you: 'caller', callto: doneUser.getRoom().receiver.getId()});
 		room.receiver.getSocket().emit('start', {you: 'receiver', callto: caller.getId()});
-		// Basically recursion
+		// Continue
 		caller.getSocket().on('doneConnecting', room.orderDone);
 		room.receiver.getSocket().on('doneConnecting', function(){console.log("Someone is done!");});
 	};
 
-	// Register room
+	// Room is created and all behaviors set - register Room
 	rooms.push(this);
 }
 
@@ -458,7 +517,7 @@ express.get('/client', function(req, res)
 							res.sendFile(__dirname+'/html/index.html');
 						});
 
-// Cascading Style Sheets file
+// Style sheet file
 express.get('/css', function(req, res)
 						{
 							res.sendFile(__dirname+'/css/css.css');
@@ -469,7 +528,13 @@ express.get('/favicon.ico', function(req, res)
 								res.sendFile(__dirname+'/favicon.ico');
 							});
 
-// Destroys and unregisters room
+/*
+ * roomShredder: destroys and unregisters room
+ * Precondition: room is a valid Room object
+ * Postcondition: room no longer exists
+ * Parameter: room - the room to be destroyed
+ * Return value: none
+ */
 function roomShredder(room)
 {
 	console.log('Shredding ' + room.getName() + '...');
@@ -490,29 +555,49 @@ function roomShredder(room)
 	
 	// Delete room
 	delete room;
-	// Extra precaution because Javascript behaves in mysterious ways
+	// Extra precaution because Javascript works in mysterious ways
 	room = false;
 
 	if(!room)
 		console.log('Shredded!');
 }
 
-// Login
+/*
+ * login: finds room by name n, and returns it if p is its password
+ * Precondition: n and p are valid strings (probly provided by user)
+ * Postcondition: none
+ * Parameters:
+ *					n - name of desired room
+ *					p - password for desired room
+ * Return values:
+ *					if n matches the name of a room and p matches its password - a Room object
+ *					else - false
+ */
 function login(n, p)
 {
 	// Find room
 	for(var i = 0; i < rooms.length; i ++)
 	{
-		// If found - return that room
+		// Compare name and password
 		if(rooms[i].getName() == n && rooms[i].getPassword() == p)
-			return rooms[i];
+			return rooms[i]; // Ayy, a match!
 	}
 
-	// No room found - return false
+	// No room found or password incorrect - return false
 	return false;
 }
 
-// Create a room
+/*
+ * createRoom: creates a Room with name n and password p, if no other Room named n exists
+ * Precondition: none
+ * Postcondition: now there's a new Room with name n and password p
+ * Parameters:
+ *				n - desired name for Room
+ * 			p - desired password for Room
+ * Return values:
+ *				if no other Room of name n exists - a new Room object of name n and password p
+ *				else - false
+ */
 function createRoom(n, p)
 {
 	// Make sure we don't already have a room with this name
@@ -526,7 +611,21 @@ function createRoom(n, p)
 	return new Room(n, p);
 }
 
-// Authentication - logs into or creates a room
+/*
+ * auth - processes new user requests
+ * Precondition: socket is a valid websocket, info is a valid string
+ * Postcondition: a new User exists in either a new Room or a preexisting one
+ * Parameters:
+ * 				socket - the websocket along which the request was delivered
+ *					info - request:
+ *							{
+ *								info.uname - user's screenname/username
+ *								info.rname - desired room name
+ *								info.pass - desired room's password
+ *								info.type - either 'create' or 'login', depending on what the user wants
+ *							}
+ * Return value: none
+ */
 function auth(socket, info)
 {
 	console.log(info.uname + " wants to " + info.type + " " + info.rname);
@@ -547,10 +646,11 @@ function auth(socket, info)
 	// Make sure it went smoothly
 	if(!room)
 	{
-		console.log(info.type + " failed!");
 		// Something happened
+		console.log(info.type + " failed!");
+		// Alert end user
 		socket.emit(info.type + ' failed');
-		// Await new packet		
+		// Nothing else to do		
 		return;
 	}
 	else
@@ -569,25 +669,29 @@ function auth(socket, info)
 	}
 }
 
-// Normal connection procedure
-function onConnection(socket)
-{
-	console.log("Someone connected!");
-	// Watch for authentication data
-	socket.on('auth', function(info)
-							{
-								info = parseJSON(info);
-								console.log("Someone wants in: " + JSON.stringify(info));
-								// Run authentication
-								auth(socket, info);
-							});
-}
-
-// Callback for when someone connects
-io.on('connection', onConnection);
+/*
+ * connection callback: called every time a websocket connects to the server
+ * Precondition: none
+ * Postcondition: ready to receive new user requests from that websocket
+ * Parameter: socket - the connecting websocket
+ * Return value: none
+ */
+io.on('connection',
+		function(socket)
+		{
+			console.log("Someone connected!");
+			// Watch for authentication data
+			socket.on('auth', function(info)
+									{
+										info = parseJSON(info);
+										console.log("Someone wants in: " + JSON.stringify(info));
+										// Run authentication
+										auth(socket, info);
+									});
+		});
 
 // Port and ip configuration
-var port = process.env.OPENSHIFT_NODEJS_PORT || 8080;
+var port = process.env.OPENSHIFT_NODEJS_PORT || 1755;
 var ip = process.env.OPENSHIFT_NODEJS_IP || 'localhost';
 
 app.listen(port, ip, function(){
